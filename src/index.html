@@ -16,7 +16,7 @@
   {{#each mobile.icons}}
     <link rel="{{rel}}" {{#if sizes}}sizes="{{sizes}}" {{/if}}href="{{href}}">
   {{/each}}
-
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   {{#if environment.production}}
   <script type="text/javascript">
     if ('serviceWorker' in navigator) {
@@ -26,12 +26,12 @@
     }
   </script>
   {{/if}}
-  
+
 </head>
 <body>
   <app-root>Loading...</app-root>
 
-  
+
 
     {{#if environment.production}}
       <script src="/app-concat.js" async></script>
@@ -46,7 +46,7 @@
       </script>
     {{/if}}
 
-  
+
 
 </body>
 </html>

@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
+import { ROUTER_DIRECTIVES } from '@angular/router';
 import { APP_SHELL_DIRECTIVES } from '@angular/app-shell';
 
 @Component({
   moduleId: module.id,
   selector: 'app-root',
-  template: `
-  <h1>
-    {{title}}
-  </h1>
-  `,
+  template: `<router-outlet></router-outlet>`,
   styles: [],
-  directives: [APP_SHELL_DIRECTIVES]
+  directives: [
+    ROUTER_DIRECTIVES,
+    APP_SHELL_DIRECTIVES
+  ]
 })
 export class AppComponent {
   title = 'app works!';
