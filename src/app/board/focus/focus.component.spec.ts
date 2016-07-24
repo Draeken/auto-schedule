@@ -11,11 +11,10 @@ import {
 } from '@angular/core/testing';
 
 import { FocusComponent } from './focus.component';
-import { RootService} from '../shared/root.service'
 
 describe('Component: Focus', () => {
   it('should create an instance', () => {
-    let component = new FocusComponent(new RootService());
+    let component = new FocusComponent();
     expect(component).toBeTruthy();
   });
 });

@@ -6,6 +6,6 @@ const routes: RouterConfig = [
   { path: '', component: FocusComponent },
 ];
 
-export const appRouterProviders = [
+export const APP_ROUTER_PROVIDERS = [
   provideRouter(routes)
 ];

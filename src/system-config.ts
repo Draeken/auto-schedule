@@ -9,7 +9,7 @@
 const map: any = {
   'firebase': 'vendor/firebase/firebase.js',
   'angularfire2': 'vendor/angularfire2',
-  '@angular2-material': 'vendor/@angularr2-material',
+  '@angular2-material': 'vendor/@angular2-material',
   '@ngrx': 'vendor/@ngrx'
 };
 
