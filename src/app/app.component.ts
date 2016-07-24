@@ -18,5 +18,4 @@ import { MdSpinner } from '@angular2-material/progress-circle';
   ]
 })
 export class AppComponent {
-  title = 'the app works!';
 }
