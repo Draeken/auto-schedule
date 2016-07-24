@@ -6,13 +6,13 @@ import {
   expect, it, xit,
   async, inject
 } from '@angular/core/testing';
-import { SleepService } from './sleep.service';
+import { ConductorService } from './conductor.service';
 
-describe('Sleep Service', () => {
-  beforeEachProviders(() => [SleepService]);
+describe('Root Service', () => {
+  beforeEachProviders(() => [ConductorService]);
 
   it('should ...',
-      inject([SleepService], (service: SleepService) => {
+      inject([ConductorService], (service: ConductorService) => {
     expect(service).toBeTruthy();
   }));
 });
