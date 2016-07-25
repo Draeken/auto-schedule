@@ -1,15 +1,25 @@
 /* tslint:disable:no-unused-variable */
 
-import {
-  beforeEach, beforeEachProviders,
-  describe, xdescribe,
-  expect, it, xit,
-  async, inject
-} from '@angular/core/testing';
-import { ConductorService } from './conductor.service';
+import { addProviders, inject } from '@angular/core/testing';
 
-describe('Root Service', () => {
-  beforeEachProviders(() => [ConductorService]);
+import { ConductorService } from './conductor.service';
+import { DeliveryService } from './delivery.service'
+import { Agent } from './agent.interface';
+
+class TestDeliveryService {
+  getServices() {
+    return [<Agent>{
+    }];
+  }
+}
+
+describe('Conductor Service', () => {
+  beforeEach(() => {
+    addProviders([
+      { provide: DeliveryService, useClass: TestDeliveryService },
+      ConductorService
+    ]);
+  });
 
   it('should ...',
       inject([ConductorService], (service: ConductorService) => {
