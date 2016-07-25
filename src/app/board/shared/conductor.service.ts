@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 
 import { DeliveryService } from './delivery.service';
-import { BaseAgent } from './base.agent';
+import { Agent } from './agent.interface';
 
 @Injectable()
 export class ConductorService {
-  private services: BaseAgent[];
+  private services: Agent[];
   private curActivity: string;
 
   constructor(private delivery: DeliveryService) {

@@ -10,8 +10,8 @@ import { DeliveryService } from './shared/delivery.service';
   styleUrls: ['board.component.css'],
   directives: [ROUTER_DIRECTIVES],
   providers: [
-    ConductorService,
-    DeliveryService
+    DeliveryService,
+    ConductorService,    
   ]
 })
 export class BoardComponent implements OnInit {

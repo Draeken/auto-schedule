@@ -1,9 +1,8 @@
-import { BaseAgent } from './base.agent'
+import { Agent } from './agent.interface'
 
-export class SleepAgent extends BaseAgent {
+export class SleepAgent implements Agent {
 
   constructor() {
-    super();
   }
 
 }
