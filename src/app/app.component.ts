@@ -18,9 +18,7 @@ import { STATE_AND_DISPATCHER } from './shared/state-dispatcher.provider'
     APP_SHELL_DIRECTIVES,
     MdSpinner
   ],
-  provide: [
-    STATE_AND_DISPATCHER
-  ]
+  providers: STATE_AND_DISPATCHER
 })
 export class AppComponent {
 }

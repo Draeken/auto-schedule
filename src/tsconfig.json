@@ -16,6 +16,12 @@
     "inlineSources": true
   },
 
+  "exclude": [
+    "node_modules",
+    "typings/global",
+    "typings/global.d.ts"
+  ],
+
   "files": [
     "main.ts",
     "main-app-shell.ts",
