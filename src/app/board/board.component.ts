@@ -11,7 +11,7 @@ import { DeliveryService } from './shared/delivery.service';
   directives: [ROUTER_DIRECTIVES],
   providers: [
     DeliveryService,
-    ConductorService,    
+    ConductorService,
   ]
 })
 export class BoardComponent implements OnInit {

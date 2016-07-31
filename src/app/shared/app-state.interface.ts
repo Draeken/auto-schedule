@@ -1,5 +1,5 @@
-import { Activity } from "../board/shared/activity.interface";
-import { UserStates } from "./user-states.interface";
+import { Activity } from '../board/shared/activity.interface';
+import { UserStates } from './user-states.interface';
 
 const INIT_USER_STATE: UserStates = {
 

@@ -1,4 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { Activity } from '../shared';
+import { DISPATCHER, STATE, action, AppState } from '../../shared';
 
 @Component({
   moduleId: module.id,
@@ -8,10 +12,18 @@ import { Component, OnInit } from '@angular/core';
   providers: []
 })
 export class FocusComponent implements OnInit {
-  currentActivity: string;
 
-  constructor() {
-    this.currentActivity = 'test';
+  constructor(
+    @Inject(DISPATCHER) private dispatcher: Observable<action>,
+    @Inject(STATE) private state: Observable<AppState>
+  ) { }
+
+  get currentActivity() {
+    return this.state.map(s => this.computeCurrentActivity(s.activities));
+  }
+
+  private computeCurrentActivity(activities: Activity[]): Activity {
+    return activities.find(a => true);
   }
 
   ngOnInit() {

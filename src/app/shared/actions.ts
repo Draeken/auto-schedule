@@ -1,7 +1,7 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { AppState } from './app-state.interface'
-import { activityHandler } from './activity.actions'
+import { AppState } from './app-state.interface';
+import { activityHandler } from './activity.actions';
 
 export class AddActivityAction {
   constructor(public name: string) {}
