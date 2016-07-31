@@ -22,10 +22,12 @@
     "typings/global.d.ts"
   ],
 
-  "files": [
+  "filesGlob": [
     "main.ts",
     "main-app-shell.ts",
     "typings.d.ts",
+    "app/**/*.ts",
+    "!app/**/*.spec.ts",
     "node_modules/angularfire2/firebase3.d.ts"
   ]
 }
