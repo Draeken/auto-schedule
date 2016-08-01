@@ -3,7 +3,7 @@ import { ROUTER_DIRECTIVES } from '@angular/router';
 import { APP_SHELL_DIRECTIVES } from '@angular/app-shell';
 import { MdSpinner } from '@angular2-material/progress-circle';
 
-import { STATE_AND_DISPATCHER } from './shared/state-dispatcher.provider';
+import { STATE_AND_DISPATCHER, DataIO } from './shared';
 
 @Component({
   moduleId: module.id,
@@ -18,7 +18,10 @@ import { STATE_AND_DISPATCHER } from './shared/state-dispatcher.provider';
     APP_SHELL_DIRECTIVES,
     MdSpinner
   ],
-  providers: STATE_AND_DISPATCHER
+  providers: [
+    ...STATE_AND_DISPATCHER,
+    DataIO
+  ]
 })
 export class AppComponent {
 }
