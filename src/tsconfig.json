@@ -22,6 +22,11 @@
     "typings/global.d.ts"
   ],
 
+  "files": [
+    "main.ts",
+    "typings.d.ts"
+  ],
+
   "filesGlob": [
     "main.ts",
     "main-app-shell.ts",
