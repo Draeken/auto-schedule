@@ -1,6 +1,11 @@
-[![CI Status]
+[![CI status]
   (https://travis-ci.org/PBM42/auto-schedule.svg?branch=master)]
   (https://travis-ci.org/PBM42/auto-schedule)
+
+[![codecov]
+  (https://codecov.io/gh/PBM42/auto-schedule/branch/master/graph/badge.svg)]
+  (https://codecov.io/gh/PBM42/auto-schedule)
+
 # AutoSchedule
 
 This project was generated with [angular-cli](https://github.com/angular/angular-cli) version 1.0.0-beta.9.
