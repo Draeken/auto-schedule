@@ -7,13 +7,9 @@ import { action, stateFn, AppState, STATE_AND_DISPATCHER, DataIO } from './';
 
 describe('Service: DataIO', () => {
 
-  beforeEach(() => {
-    addProviders([...STATE_AND_DISPATCHER, DataIO]);
-  });
+  beforeEach(() => addProviders([...STATE_AND_DISPATCHER, DataIO]));
 
-  it('should ...',
-    inject([DataIO],
-      (service: DataIO) => {
-        expect(service).toBeTruthy();
-      }));
+  it('should ...', inject([DataIO], (service: DataIO) => {
+    expect(service).toBeTruthy();
+  }));
 });

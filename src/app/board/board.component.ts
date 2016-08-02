@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ROUTER_DIRECTIVES } from '@angular/router';
 
-import { ConductorService } from './shared/conductor.service';
-import { DeliveryService } from './shared/delivery.service';
+import { ConductorService, DeliveryService } from './shared';
+import { DataIO } from '../shared';
 
 @Component({
   moduleId: module.id,
@@ -10,6 +10,7 @@ import { DeliveryService } from './shared/delivery.service';
   styleUrls: ['board.component.css'],
   directives: [ROUTER_DIRECTIVES],
   providers: [
+    DataIO,
     DeliveryService,
     ConductorService,
   ]
