@@ -1,8 +1,6 @@
 [![CI status]
   (https://travis-ci.org/PBM42/auto-schedule.svg?branch=master)]
-  (https://travis-ci.org/PBM42/auto-schedule)
-
-[![codecov]
+  (https://travis-ci.org/PBM42/auto-schedule) [![codecov]
   (https://codecov.io/gh/PBM42/auto-schedule/branch/master/graph/badge.svg)]
   (https://codecov.io/gh/PBM42/auto-schedule)
 
