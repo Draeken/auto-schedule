@@ -23,6 +23,8 @@ module.exports = function(defaults) {
       '@angular2-material/**/*.js',
       //Below are the Ngrx entries
       '@ngrx/**/*.+(js|js.map)',
+      //Third entries
+      'localforage/dist/localforage.min.js',
     ]
   });
 };
