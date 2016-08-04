@@ -1,4 +1,4 @@
-import * as LocalForage from 'localforage';
+import { localforage } from 'localforage';
 
 import { Activity } from '../board/shared/activity.interface';
 import { UserStates } from './user-states.interface';
@@ -13,7 +13,13 @@ const INIT_APP_STATE: AppState = {
 };
 
 export function initAppState(): AppState {
-  return null;
+  let appState: AppState = INIT_APP_STATE;
+  localforage.getItem('appState', (value: AppState) => {
+    if (value) {
+      appState = value;
+    }
+  });
+  return appState;
 }
 
 export interface AppState {

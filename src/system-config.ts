@@ -19,7 +19,7 @@ function createPackageConfFor(main: string): any {
     format: 'cjs',
     defaultExtension: 'js',
     main: main
-  }
+  };
 }
 
 /** User packages configuration. */
@@ -44,7 +44,7 @@ const packages: any = {
   '@angular2-material/toolbar': createPackageConfFor('toolbar'),
   '@ngrx/core': createPackageConfFor('index'),
   '@ngrx/store': createPackageConfFor('index'),
-  'localforage': createPackageConfFor('localforage.min')
+  'localforage': { format: 'cjs', defaultExtension: 'js' }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
