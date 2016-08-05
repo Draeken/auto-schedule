@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Observer } from 'rxjs';
 
 import { Activity } from '../shared';
 import { DISPATCHER, STATE, action, AppState } from '../../shared';
@@ -14,7 +14,7 @@ import { DISPATCHER, STATE, action, AppState } from '../../shared';
 export class FocusComponent implements OnInit {
 
   constructor(
-    @Inject(DISPATCHER) private dispatcher: Observable<action>,
+    @Inject(DISPATCHER) private dispatcher: Observer<action>,
     @Inject(STATE) private state: Observable<AppState>
   ) { }
 

@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Observer } from 'rxjs';
 
 import { Activity } from '../board/shared';
 import { DISPATCHER, STATE, action, AppState } from './';
@@ -8,7 +8,7 @@ import { DISPATCHER, STATE, action, AppState } from './';
 export class DataIO {
 
   constructor(
-    @Inject(DISPATCHER) private dispatcher: Observable<action>,
+    @Inject(DISPATCHER) private dispatcher: Observer<action>,
     @Inject(STATE) private state: Observable<AppState>
   ) { }
 

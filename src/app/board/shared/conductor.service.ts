@@ -1,20 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject } from '@angular/core';
+import { Observable, Observer } from 'rxjs';
 
-import { DeliveryService } from './delivery.service';
-import { Agent } from './agent.interface';
+import { Agent, DeliveryService, Activities } from './';
+import { DISPATCHER, STATE, action, AppState } from '../../shared';
 
 @Injectable()
 export class ConductorService {
-  private services: Agent[];
-  private curActivity: string;
-
-  constructor(private delivery: DeliveryService) {
-    this.services = delivery.getServices();
-    this.curActivity = 'Coder.';
+  constructor(
+    private delivery: DeliveryService,
+    @Inject(DISPATCHER) private dispatcher: Observer<action>,
+    @Inject(STATE) private state: Observable<AppState>) {
   }
-
-  get currentActivity() {
-    return this.curActivity;
-  }
-
 }

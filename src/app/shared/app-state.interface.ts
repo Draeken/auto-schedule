@@ -1,6 +1,6 @@
 import { localforage } from 'localforage';
 
-import { Activity } from '../board/shared/activity.interface';
+import { Activity, Service } from '../board/shared/';
 import { UserStates } from './user-states.interface';
 
 const INIT_USER_STATE: UserStates = {
@@ -9,7 +9,8 @@ const INIT_USER_STATE: UserStates = {
 
 const INIT_APP_STATE: AppState = {
   activities: [],
-  userStates: INIT_USER_STATE
+  userStates: INIT_USER_STATE,
+  services: []
 };
 
 export function initAppState(): AppState {
@@ -25,4 +26,5 @@ export function initAppState(): AppState {
 export interface AppState {
   activities: Activity[];
   userStates: UserStates;
+  services: Service[];
 }

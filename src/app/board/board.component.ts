@@ -17,7 +17,7 @@ import { DataIO } from '../shared';
 })
 export class BoardComponent implements OnInit {
 
-  constructor() {}
+  constructor(private conductor: ConductorService) {}
 
   ngOnInit() {
   }

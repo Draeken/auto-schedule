@@ -3,7 +3,7 @@
 import { addProviders, inject } from '@angular/core/testing';
 
 import { ConductorService } from './conductor.service';
-import { DeliveryService } from './delivery.service'
+import { DeliveryService } from './delivery.service';
 import { Agent } from './agent.interface';
 
 class TestDeliveryService {
