@@ -1,8 +1,7 @@
-import { Service } from './';
+import { Service, Constraint } from './';
 
 export interface Activity {
   responsible: Service;
   name: string;
-  start: number;
-  end: number;
+  constraints: Constraint;
 }

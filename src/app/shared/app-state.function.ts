@@ -1,5 +1,5 @@
 import { Observable, BehaviorSubject } from 'rxjs';
-import { AppState, action, activityHandler } from './';
+import { AppState, action, activityHandler, serviceHandler } from './';
 
 export function stateFn(initState: AppState, actions: Observable<action>): Observable<AppState> {
   const combine = s => ({
@@ -9,8 +9,9 @@ export function stateFn(initState: AppState, actions: Observable<action>): Obser
   });
   const appStateObs: Observable<AppState> =
     activityHandler(initState.activities, actions).
-    zip().
+    zip(serviceHandler(initState.services, actions)).
     map(combine);
+
   return wrapIntoBehavior(initState, appStateObs);
 }
 

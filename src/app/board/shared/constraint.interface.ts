@@ -6,5 +6,5 @@ export interface Constraint {
   pattern?: ConstraintPattern;
   length?: number;
   date?: Date;
-  when?: string;
+  when?: string | number;
 }

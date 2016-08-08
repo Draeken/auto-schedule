@@ -6,3 +6,4 @@ export * from './agent.interface';
 export * from './activities.class';
 export * from './constraint.interface';
 export * from './service.interface';
+export * from './time.helper'

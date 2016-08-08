@@ -1,6 +1,6 @@
-import { Activity, Constraint } from './';
+import { Activity, Service } from './';
 
 export interface Agent {
-
-  getProposals(): Constraint[];
+  service: Service;
+  getProposals(): Activity[];
 }

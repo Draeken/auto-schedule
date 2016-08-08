@@ -7,7 +7,7 @@ const INIT_USER_STATE: UserStates = {
 
 };
 
-const INIT_APP_STATE: AppState = {
+export const INIT_APP_STATE: AppState = {
   activities: [],
   userStates: INIT_USER_STATE,
   services: []
