@@ -3,7 +3,7 @@ import { ROUTER_DIRECTIVES } from '@angular/router';
 import { APP_SHELL_DIRECTIVES } from '@angular/app-shell';
 import { MdSpinner } from '@angular2-material/progress-circle';
 
-import { STATE_AND_DISPATCHER } from './shared';
+import { STATE_AND_DISPATCHER_PROVIDER, APP_CONFIG_PROVIDER } from './shared';
 
 @Component({
   moduleId: module.id,
@@ -19,7 +19,8 @@ import { STATE_AND_DISPATCHER } from './shared';
     MdSpinner
   ],
   providers: [
-    ...STATE_AND_DISPATCHER
+    ...STATE_AND_DISPATCHER_PROVIDER,
+    APP_CONFIG_PROVIDER
   ]
 })
 export class AppComponent {

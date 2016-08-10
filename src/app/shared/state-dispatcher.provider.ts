@@ -4,11 +4,11 @@ import { Subject } from 'rxjs';
 
 import { initAppState, action, stateFn } from './';
 
-export const INIT_STATE = new OpaqueToken('initState');
+export const INIT_STATE = new OpaqueToken('init.state');
 export const DISPATCHER = new OpaqueToken('dispatcher');
 export const STATE = new OpaqueToken('state');
 
-export const STATE_AND_DISPATCHER = [
+export const STATE_AND_DISPATCHER_PROVIDER = [
   {
     provide: INIT_STATE,
     useFactory: initAppState

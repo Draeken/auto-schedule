@@ -1,6 +1,9 @@
+import { Observable } from 'rxjs';
+
 import { Activity, Agent, Service, TimeHelper, LOCAL_URL } from './';
 
 export class SleepAgent implements Agent {
+  private allocations: Observable<any>;
 
   constructor() {
   }
