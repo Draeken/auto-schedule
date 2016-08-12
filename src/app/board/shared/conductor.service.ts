@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@angular/core';
-import { Observable, Observer } from 'rxjs';
+import { Observable, Observer, BehaviorSubject } from 'rxjs';
 
 import { Agent, DeliveryService, Activity, Activities, Service, ConstraintsHandler } from './';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState } from '../../shared';
@@ -8,9 +8,9 @@ type state = { activities: Activity[] };
 
 @Injectable()
 export class ConductorService {
-  schedule: Observable<Activities>;
+  schedule: BehaviorSubject<any>;
 
-  private serviceObservable: Map<string, Observable<any>>;
+  private serviceObservable: Map<string, BehaviorSubject<any>>;
 
   constructor(private delivery: DeliveryService,
               @Inject(DISPATCHER) private dispatcher: Observer<action>,
@@ -19,7 +19,29 @@ export class ConductorService {
     this.state
       .pluck('services')
       .distinctUntilChanged(this.areArrayDistincts)
-      .map(this.mapServices);
+      .do(this.mapServices)
+      .map(this.registerServices);
+  }
+
+  private registerServices(services: Service[]): void {
+    let timelineObs = Observable.combineLatest(
+      Array.from(this.serviceObservable.values()),
+      this.timelineBuilder);
+    timelineObs.subscribe(this.schedule);
+    services.forEach(s => {
+      this.delivery.getAgent(s.name).setConductorRegistration(
+        this.allocationObsFor(timelineObs, s.name),
+        this.serviceObservable.get(s.name)
+      );
+    });
+  }
+
+  private timelineBuilder(allocations: any[]): any {
+
+  }
+
+  private allocationObsFor(timeline: Observable<any>, serviceName: string): Observable<any> {
+    return timeline.filter(a => true);
   }
 
   private mapServices(services: Service[]): void {
@@ -32,19 +54,9 @@ export class ConductorService {
       if (this.serviceObservable.has(s.name)) {
         return;
       }
-      this.serviceObservable.set(s.name, this.observableFor(s.name));
+      this.serviceObservable.set(s.name, new BehaviorSubject<any>({}));
     });
   }
-
-  private observableFor(serviceName: string): Observable<any> {
-    return this.state
-      .map(s => {
-        const activities = s.activities.filter(a => a.responsible.name === serviceName);
-        return { activities: activities };
-      })
-      .distinctUntilChanged(this.areStatesDistincts)
-      .map(this.buildSchedule);
-  };
 
   private areArrayDistincts(x: Array<any>, y: Array<any>): boolean {
     if (!x && !y) {
@@ -61,20 +73,5 @@ export class ConductorService {
       }
     }
     return false;
-  }
-
-  /**
-   * TODO: Test without this function (default equality)
-   */
-  private areStatesDistincts(x: state, y: state): boolean {
-    const ax = x.activities;
-    const ay = y.activities;
-
-    return this.areArrayDistincts(ax, ay);
-  }
-
-  private buildSchedule(state: state): any {
-    let constHandler = new ConstraintsHandler(this.config, state.activities);
-    return constHandler;
   }
 }

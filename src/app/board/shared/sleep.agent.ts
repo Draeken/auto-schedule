@@ -1,11 +1,24 @@
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
+import { AppState } from '../../shared';
 import { Activity, Agent, Service, TimeHelper, LOCAL_URL } from './';
 
 export class SleepAgent implements Agent {
-  private allocations: Observable<any>;
+  private config = new Subject<any>();
+  private requests: Subject<any>;
 
-  constructor() {
+  constructor(private appState: Observable<AppState>) {
+    this.config.startWith({});
+  }
+
+  setComponentRegistration(obs: Observable<any>): void {
+    obs.subscribe(this.config);
+  }
+
+  setConductorRegistration(allocation: Observable<any>,
+                           requests: Subject<any>): void {
+    this.requests = requests;
+    this.config.combineLatest(allocation).subscribe(this.checkAllocation);
   }
 
   getProposals(): Activity[] {
@@ -30,5 +43,9 @@ export class SleepAgent implements Agent {
       name: 'sleep'
     };
     return service;
+  }
+
+  private checkAllocation(context: [any, any]): void {
+
   }
 }
