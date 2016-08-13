@@ -3,22 +3,11 @@ import { Observable, Subject } from 'rxjs';
 import { AppState } from '../../shared';
 import { Activity, Agent, Service, TimeHelper, LOCAL_URL } from './';
 
-export class SleepAgent implements Agent {
-  private config = new Subject<any>();
-  private requests: Subject<any>;
+export class SleepAgent extends Agent {
 
   constructor(private appState: Observable<AppState>) {
+    super();
     this.config.startWith({});
-  }
-
-  setComponentRegistration(obs: Observable<any>): void {
-    obs.subscribe(this.config);
-  }
-
-  setConductorRegistration(allocation: Observable<any>,
-                           requests: Subject<any>): void {
-    this.requests = requests;
-    this.config.combineLatest(allocation).subscribe(this.checkAllocation);
   }
 
   getProposals(): Activity[] {
@@ -45,7 +34,7 @@ export class SleepAgent implements Agent {
     return service;
   }
 
-  private checkAllocation(context: [any, any]): void {
+  protected checkAllocation(context: [any, any]): void {
 
   }
 }

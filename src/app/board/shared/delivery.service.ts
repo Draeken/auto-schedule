@@ -28,7 +28,7 @@ export class DeliveryService {
   private getAgentInstance(agentName: string): Agent {
     switch (agentName) {
       case 'sleep':
-        return new SleepAgent();
+        return new SleepAgent(this.state);
     }
   }
 
