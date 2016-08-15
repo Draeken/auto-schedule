@@ -26,7 +26,9 @@ export class ConductorService {
   private registerServices(services: Service[]): void {
     let timelineObs = Observable.combineLatest(
       Array.from(this.serviceObservable.values()),
-      this.timelineBuilder);
+      this.timelineBuilder)
+      .map(this.tryToResolveConflicts)
+      .filter(this.isTimelineWithoutConflict);
     timelineObs.subscribe(this.schedule);
     services.forEach(s => {
       this.delivery.getAgent(s.name).setConductorRegistration(
@@ -36,7 +38,15 @@ export class ConductorService {
     });
   }
 
-  private timelineBuilder(allocations: any[]): any {
+  private isTimelineWithoutConflict(timeline: any): boolean {
+    return false;
+  }
+
+  private timelineBuilder(queries: any[]): any {
+
+  }
+
+  private tryToResolveConflicts(timeline: any): any {
 
   }
 
