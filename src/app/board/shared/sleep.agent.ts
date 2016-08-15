@@ -1,7 +1,7 @@
 import { Observable, Subject } from 'rxjs';
 
 import { AppState } from '../../shared';
-import { Activity, Agent, Service, TimeHelper, LOCAL_URL } from './';
+import { Activity, Activities, Agent, Service, ServiceQuery, TimeHelper, LOCAL_URL } from './';
 
 export class SleepAgent extends Agent {
 
@@ -34,7 +34,13 @@ export class SleepAgent extends Agent {
     return service;
   }
 
-  protected checkAllocation(context: [any, any]): void {
-
+  protected checkAllocation(context: [any, Activities]): void {
+    const activities = context[1];
+    if (!activities.fromId(0)) {
+      this.requests.next([{
+        start: TimeHelper.fromHours(22, 42),
+        duration: 8 * 3600
+      }]);
+    }
   }
 }

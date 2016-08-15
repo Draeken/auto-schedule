@@ -1,17 +1,20 @@
-import { Task } from './';
+import { Task, ServiceQuery } from './';
 
-export class Activities extends Array<Task> {
+export class Activities {
 
-  /**
-   * Pushed activities are sorted in the container
-   */
-  push(activity: Task): number {
-    let i = this.findIndex(rangeI => rangeI.start > activity.start);
-    if (i === -1) {
-      return super.push(activity);
-    } else {
-      this.splice(i, 0, activity);
-    }
-    return this.length;
+  push(serviceName: string, q: ServiceQuery): number {
+    return 0;
+  }
+
+  filter(serviceName): Activities {
+    return null;
+  }
+
+  similar(activities: Activities): boolean {
+    return true;
+  }
+
+  fromId(id: number): any {
+    return undefined;
   }
 }

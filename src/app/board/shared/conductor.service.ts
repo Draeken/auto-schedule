@@ -1,16 +1,16 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer, BehaviorSubject } from 'rxjs';
 
-import { Agent, DeliveryService, Activity, Activities, Service, ConstraintsHandler } from './';
+import { Agent, DeliveryService, Activity, Activities, Service, ServiceQuery } from './';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState } from '../../shared';
 
 type state = { activities: Activity[] };
 
 @Injectable()
 export class ConductorService {
-  schedule: BehaviorSubject<any>;
+  schedule: BehaviorSubject<Activities>;
 
-  private serviceObservable: Map<string, BehaviorSubject<any>>;
+  private serviceObservable: Map<string, BehaviorSubject<ServiceQuery[]>>;
 
   constructor(private delivery: DeliveryService,
               @Inject(DISPATCHER) private dispatcher: Observer<action>,
@@ -38,20 +38,28 @@ export class ConductorService {
     });
   }
 
-  private isTimelineWithoutConflict(timeline: any): boolean {
-    return false;
+  private isTimelineWithoutConflict(timeline: Activities): boolean {
+    return true;
   }
 
-  private timelineBuilder(queries: any[]): any {
-
+  private timelineBuilder(queries: ServiceQuery[][]): Activities {
+    let activities = new Activities;
+    let serviceNames = this.serviceObservable.keys();
+    queries.forEach(squeries => {
+      let serviceName = serviceNames.next().value;
+      squeries.forEach(query => activities.push(serviceName, query));
+    });
+    return activities;
   }
 
-  private tryToResolveConflicts(timeline: any): any {
-
+  private tryToResolveConflicts(timeline: Activities): Activities {
+    return timeline;
   }
 
-  private allocationObsFor(timeline: Observable<any>, serviceName: string): Observable<any> {
-    return timeline.filter(a => true);
+  private allocationObsFor(timeline: Observable<Activities>, serviceName: string): Observable<Activities> {
+    return timeline
+      .map(a => a.filter(serviceName))
+      .distinctUntilChanged((x, y) => x.similar(y));
   }
 
   private mapServices(services: Service[]): void {
@@ -64,7 +72,7 @@ export class ConductorService {
       if (this.serviceObservable.has(s.name)) {
         return;
       }
-      this.serviceObservable.set(s.name, new BehaviorSubject<any>({}));
+      this.serviceObservable.set(s.name, new BehaviorSubject<ServiceQuery[]>([]));
     });
   }
 
