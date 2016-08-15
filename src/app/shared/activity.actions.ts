@@ -22,7 +22,7 @@ function addActivity(state: Activity[], action: AddActivityAction): Activity[] {
 function activateServices(state: Activity[], action: ActivateServicesAction): Activity[] {
   const newActivities = action.services
   .map(s => action.getAgent(s.name))
-  .map(a => a.getProposals())
+  .map(a => [])
   .reduce((a, b) => a.concat(b));
 
   return state.concat(newActivities);

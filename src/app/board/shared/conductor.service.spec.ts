@@ -4,7 +4,7 @@ import { addProviders, inject } from '@angular/core/testing';
 
 import { ConductorService } from './conductor.service';
 import { DeliveryService } from './delivery.service';
-import { Agent } from './agent.interface';
+import { Agent } from './agent.abstract';
 
 class TestDeliveryService {
   getServices() {
