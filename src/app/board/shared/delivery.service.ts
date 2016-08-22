@@ -1,13 +1,13 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { SleepAgent, Agent, LOCAL_URL } from './';
+import { FreeAgent, SleepAgent, Agent, LOCAL_URL } from './';
 import { DISPATCHER, STATE, action, AppState, ActivateServicesAction } from '../../shared';
 
 @Injectable()
 export class DeliveryService {
   static BASE_SERVICES = [
-    'sleep'
+    'sleep', 'free'
   ];
   private agents: Map<string, Agent>;
 
@@ -29,6 +29,8 @@ export class DeliveryService {
     switch (agentName) {
       case 'sleep':
         return new SleepAgent(this.state);
+      case 'free':
+        return new FreeAgent(this.state);
     }
   }
 

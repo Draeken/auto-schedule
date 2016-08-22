@@ -1,18 +1,22 @@
 import { Injectable, Inject } from '@angular/core';
-import { Observable, Observer, BehaviorSubject } from 'rxjs';
+import { Observable, Observer, BehaviorSubject, Subject } from 'rxjs';
 
-import { Agent, DeliveryService, Activity, Activities, Service, ServiceQuery } from './';
-import { DISPATCHER, STATE, APP_CONFIG, action, AppState } from '../../shared';
+import { Agent, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './';
+import { DISPATCHER, STATE, APP_CONFIG, action, AppState, DataIO } from '../../shared';
 
 type state = { activities: Activity[] };
+const TIMELINE_DEBOUNCE_TIME = 80;
 
 @Injectable()
 export class ConductorService {
-  schedule: BehaviorSubject<Activities>;
+  schedule = new BehaviorSubject<Activities>(null);
+  newActivityTimer = new Subject<Marker[]>();
 
+  private timeoutActivity: NodeJS.Timer;
   private serviceObservable: Map<string, BehaviorSubject<ServiceQuery[]>>;
 
   constructor(private delivery: DeliveryService,
+              private dataIO: DataIO,
               @Inject(DISPATCHER) private dispatcher: Observer<action>,
               @Inject(STATE) private state: Observable<AppState>,
               @Inject(APP_CONFIG) private config) {
@@ -24,11 +28,14 @@ export class ConductorService {
   }
 
   private registerServices(services: Service[]): void {
-    let timelineObs = Observable.combineLatest(
-      Array.from(this.serviceObservable.values()),
-      this.timelineBuilder)
+    let rawTimelineObs: Observable<ServiceQuery[][]> = Observable.combineLatest(
+      Array.from(this.serviceObservable.values()), (x, y) => [x, y]);
+    let timelineObs = rawTimelineObs
+      .debounceTime(TIMELINE_DEBOUNCE_TIME)
+      .map(this.timelineBuilder)
       .map(this.tryToResolveConflicts)
-      .filter(this.isTimelineWithoutConflict);
+      .filter(t => t.hasNoConflict)
+      .do(this.registerEndActivity);
     timelineObs.subscribe(this.schedule);
     services.forEach(s => {
       this.delivery.getAgent(s.name).setConductorRegistration(
@@ -38,12 +45,27 @@ export class ConductorService {
     });
   }
 
-  private isTimelineWithoutConflict(timeline: Activities): boolean {
-    return true;
+  private registerEndActivity(activities: Activities) {
+    const firstTask = activities.firstTask;
+    if (firstTask.start <= Date.now()) {
+      //Save it
+    }
+    const timeToEnd = firstTask.end - Date.now();
+    if (timeToEnd < 0) {
+      return;
+    }
+    const toDo = () => this.makeThisTimeCount(firstTask);
+    clearTimeout(this.timeoutActivity);
+    this.timeoutActivity = setTimeout(toDo, timeToEnd);
+  }
+
+  private makeThisTimeCount(task: Task): void {
+    console.log('Time left for task ', task);
+    this.delivery.getAgent(task.serviceName).endTask(task);
   }
 
   private timelineBuilder(queries: ServiceQuery[][]): Activities {
-    let activities = new Activities;
+    let activities = new Activities();
     let serviceNames = this.serviceObservable.keys();
     queries.forEach(squeries => {
       let serviceName = serviceNames.next().value;
@@ -56,10 +78,10 @@ export class ConductorService {
     return timeline;
   }
 
-  private allocationObsFor(timeline: Observable<Activities>, serviceName: string): Observable<Activities> {
+  private allocationObsFor(timeline: Observable<Activities>, serviceName: string): Observable<Marker[]> {
     return timeline
       .map(a => a.filter(serviceName))
-      .distinctUntilChanged((x, y) => x.similar(y));
+      .distinctUntilChanged((x, y) => Activities.distinctMarkers(x, y));
   }
 
   private mapServices(services: Service[]): void {

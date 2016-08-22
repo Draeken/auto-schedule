@@ -1,5 +1,3 @@
-import { localforage } from 'localforage';
-
 import { Activity, Service } from '../board/shared/';
 import { UserStates } from './user-states.interface';
 
@@ -15,11 +13,7 @@ export const INIT_APP_STATE: AppState = {
 
 export function initAppState(): AppState {
   let appState: AppState = INIT_APP_STATE;
-  localforage.getItem('appState', (value: AppState) => {
-    if (value) {
-      appState = value;
-    }
-  });
+  //TODO: localforage -> init map -> action
   return appState;
 }
 

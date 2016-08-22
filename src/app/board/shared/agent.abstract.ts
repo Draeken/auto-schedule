@@ -1,6 +1,6 @@
 import { Observable, Subject } from 'rxjs';
 
-import { Activity, Activities, Service, ServiceQuery } from './';
+import { Activity, Activities, Marker, Service, ServiceQuery, Task } from './';
 
 export abstract class Agent {
   service: Service;
@@ -11,11 +11,13 @@ export abstract class Agent {
     obs.subscribe(this.config);
   }
 
-  setConductorRegistration(allocation: Observable<Activities>,
+  setConductorRegistration(allocation: Observable<Marker[]>,
                            requests: Subject<ServiceQuery[]>): void {
     this.requests = requests;
     this.config.combineLatest(allocation).subscribe(this.checkAllocation);
   }
 
-  protected abstract checkAllocation(context: [any, Activities]): void
+  abstract endTask(task: Task): void
+
+  protected abstract checkAllocation(context: [any, Marker[]]): void
 }

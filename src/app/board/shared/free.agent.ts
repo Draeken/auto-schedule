@@ -3,7 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import { AppState } from '../../shared';
 import { Activity, Activities, Agent, Marker, Service, ServiceQuery, TimeHelper, LOCAL_URL, Task } from './';
 
-export class SleepAgent extends Agent {
+export class FreeAgent extends Agent {
 
   constructor(private appState: Observable<AppState>) {
     super();
@@ -13,13 +13,13 @@ export class SleepAgent extends Agent {
   get service() {
     const service: Service = {
       url: LOCAL_URL,
-      name: 'sleep'
+      name: 'free'
     };
     return service;
   }
 
   endTask(task: Task) {
-    //todo: save task
+    // todo: save task
   }
 
   protected checkAllocation(context: [any, Marker[]]): void {
@@ -27,9 +27,7 @@ export class SleepAgent extends Agent {
     if (true) {
       this.requests.next([{
         id: 0,
-        start: TimeHelper.nextTime(22, 42),
-        duration: TimeHelper.duration(8),
-        minimalDuration: TimeHelper.duration(1)
+        minimalDuration: 0
       }]);
     }
   }
