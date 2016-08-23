@@ -10,3 +10,4 @@ export * from './constraint.interface';
 export * from './service.interface';
 export * from './time.helper';
 export * from './service-query.interface';
+export * from './conflict-handler.service'

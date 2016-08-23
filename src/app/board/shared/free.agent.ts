@@ -27,7 +27,7 @@ export class FreeAgent extends Agent {
     if (true) {
       this.requests.next([{
         id: 0,
-        minimalDuration: 0
+        minimalDuration: 1000
       }]);
     }
   }

@@ -41,6 +41,10 @@ export class Activities {
     return this.markers.filter(m => m.serviceName === serviceName);
   }
 
+  get fuzzyEntries(): Iterator<[string, ServiceQuery[]]> {
+    return this.fuzzyQueries.entries();
+  }
+
   get hasNoConflict(): boolean {
     return !this.hasConflict;
   }
@@ -62,25 +66,61 @@ export class Activities {
     };
   }
 
+  getHoles(biggerThan = 1000): [Marker, Marker][] {
+    if (!this.markers.length) {
+      return [];
+    }
+    let result: [Marker, Marker][] = [];
+    let setMarker: { sn: string, id: number }[] = [];
+    result.push([null, this.markers[0]]);
+    this.markers.forEach((marker, ind, arr) => {
+      const prevLength = setMarker.length;
+      let i = setMarker.findIndex(m => m.sn === marker.serviceName && m.id === marker.taskId);
+      if (i !== -1) {
+        setMarker.splice(i, 1);
+      } else {
+        setMarker.push({ sn: marker.serviceName, id: marker.taskId });
+      }
+      if (prevLength + setMarker.length === 1 && ind > 0) {
+        const prevMarker = arr[ind - 1];
+        if (marker.time - prevMarker.time > biggerThan) {
+          result.push([prevMarker, marker]);
+        }
+      }
+    });
+    result.push([this.markers[this.markers.length - 1], null]);
+    return result;
+  }
+
   private isFuzzy(q: ServiceQuery): boolean {
     return (!q.start || !q.duration);
   }
 
-  private putMarkers(sn: string, q: ServiceQuery): void {
+  private pushMarker(serviceName: string, taskId: number, time: number): void {
+    let marker = { serviceName: serviceName, taskId: taskId, time: time };
+    let i = this.markers.findIndex(m => m.time > time);
+    if (i !== -1) {
+      this.markers.splice(i, 0, marker);
+    } else {
+      this.markers.push(marker);
+    }
+  }
+
+  public putMarkers(sn: string, q: ServiceQuery): void {
     let start = q.start;
     let end = q.end;
     if (start) {
-      this.markers.push({ serviceName: sn, taskId: q.id, time: start });
+      this.pushMarker(sn, q.id, start);
       if (q.duration && !end) {
         end = start + q.duration;
-        this.markers.push({ serviceName: sn, taskId: q.id, time: end });
+        this.pushMarker(sn, q.id, end);
       }
     }
     if (end) {
-      this.markers.push({ serviceName: sn, taskId: q.id, time: end });
+      this.pushMarker(sn, q.id, end);
       if (q.duration && !start) {
         start = end - q.duration;
-        this.markers.push({ serviceName: sn, taskId: q.id, time: start });
+        this.pushMarker(sn, q.id, start);
       }
     }
   }

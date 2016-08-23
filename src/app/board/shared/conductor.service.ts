@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer, BehaviorSubject, Subject } from 'rxjs';
 
-import { Agent, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './';
+import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState, DataIO } from '../../shared';
 
 type state = { activities: Activity[] };
@@ -17,6 +17,7 @@ export class ConductorService {
 
   constructor(private delivery: DeliveryService,
               private dataIO: DataIO,
+              private conflictHandler: ConflictHandlerService,
               @Inject(DISPATCHER) private dispatcher: Observer<action>,
               @Inject(STATE) private state: Observable<AppState>,
               @Inject(APP_CONFIG) private config) {
@@ -33,7 +34,7 @@ export class ConductorService {
     let timelineObs = rawTimelineObs
       .debounceTime(TIMELINE_DEBOUNCE_TIME)
       .map(this.timelineBuilder)
-      .map(this.tryToResolveConflicts)
+      .map(this.conflictHandler.tryToResolveConflicts)
       .filter(t => t.hasNoConflict)
       .do(this.registerEndActivity);
     timelineObs.subscribe(this.schedule);
@@ -72,10 +73,6 @@ export class ConductorService {
       squeries.forEach(query => activities.push(serviceName, query));
     });
     return activities;
-  }
-
-  private tryToResolveConflicts(timeline: Activities): Activities {
-    return timeline;
   }
 
   private allocationObsFor(timeline: Observable<Activities>, serviceName: string): Observable<Marker[]> {

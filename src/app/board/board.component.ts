@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ROUTER_DIRECTIVES } from '@angular/router';
 
-import { ConductorService, DeliveryService } from './shared';
+import { ConductorService, DeliveryService, ConflictHandlerService } from './shared';
 import { DataIO } from '../shared';
 
 @Component({
@@ -12,6 +12,7 @@ import { DataIO } from '../shared';
   providers: [
     DataIO,
     DeliveryService,
+    ConflictHandlerService,
     ConductorService,
   ]
 })
