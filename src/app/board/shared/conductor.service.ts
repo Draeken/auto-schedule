@@ -10,7 +10,6 @@ const TIMELINE_DEBOUNCE_TIME = 80;
 @Injectable()
 export class ConductorService {
   schedule = new BehaviorSubject<Activities>(null);
-  newActivityTimer = new Subject<Marker[]>();
 
   private timeoutActivity: NodeJS.Timer;
   private serviceObservable: Map<string, BehaviorSubject<ServiceQuery[]>>;

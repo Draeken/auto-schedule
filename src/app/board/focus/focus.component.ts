@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { Activity } from '../shared';
+import { Task, ConductorService } from '../shared';
 import { DISPATCHER, STATE, action, AppState } from '../../shared';
 
 @Component({
@@ -12,18 +12,16 @@ import { DISPATCHER, STATE, action, AppState } from '../../shared';
   providers: []
 })
 export class FocusComponent implements OnInit {
+  private firstActivity: Task;
 
   constructor(
     @Inject(DISPATCHER) private dispatcher: Observer<action>,
-    @Inject(STATE) private state: Observable<AppState>
-  ) { }
-
-  get currentActivity() {
-    return this.state.map(s => this.computeCurrentActivity(s.activities));
-  }
-
-  private computeCurrentActivity(activities: Activity[]): Activity {
-    return activities.find(a => true);
+    @Inject(STATE) private state: Observable<AppState>,
+    private conductor: ConductorService
+  ) {
+    this.conductor.schedule.subscribe(schedule => {
+      this.firstActivity = schedule.firstTask;
+    });
   }
 
   ngOnInit() {
