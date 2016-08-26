@@ -1,7 +1,7 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { AppState } from '../../shared';
-import { Activity, Activities, Agent, Marker, Service, ServiceQuery, TimeHelper, LOCAL_URL, Task } from './';
+import { Agent, Marker, Service, LOCAL_URL, Task } from './index';
 
 export class FreeAgent extends Agent {
 

@@ -14,4 +14,5 @@ export class TimeHelper {
     return hours * 3600000 + minutes * 60000;
   }
 
+  constructor() {}
 }

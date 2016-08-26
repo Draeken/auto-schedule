@@ -1,11 +1,13 @@
 import { Observable, Subject } from 'rxjs';
 
-import { Activity, Activities, Marker, Service, ServiceQuery, Task } from './';
+import { Marker, Service, ServiceQuery, Task } from './';
 
 export abstract class Agent {
   service: Service;
   protected config = new Subject<any>();
   protected requests: Subject<ServiceQuery[]>;
+
+  constructor() { }
 
   setComponentRegistration(obs: Observable<any>): void {
     obs.subscribe(this.config);

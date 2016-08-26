@@ -8,7 +8,7 @@ export function stateFn(initState: AppState, actions: Observable<action>): Obser
     services: null
   });
   const appStateObs: Observable<AppState> =
-    activityHandler(initState.activities, actions).
+    activityHandler(null, actions).
     zip(serviceHandler(initState.services, actions)).
     map(combine);
 
