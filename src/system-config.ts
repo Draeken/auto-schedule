@@ -10,8 +10,9 @@ const map: any = {
   'firebase': 'vendor/firebase/firebase.js',
   'angularfire2': 'vendor/angularfire2',
   '@angular2-material': 'vendor/@angular2-material',
-  '@ngrx': 'vendor/@ngrx',
   'localforage': 'vendor/localforage/dist/localforage.min',
+  'app-shared': 'app/shared',
+  'board-shared': 'app/board/shared',
 };
 
 function createPackageConfFor(main: string): any {
@@ -28,6 +29,8 @@ const packages: any = {
     defaultExtension: 'js',
     main: 'angularfire2'
   },
+  'app-shared': { main: 'index' },
+  'board-shared': { main: 'index' },
   '@angular2-material/core': createPackageConfFor('core'),
   '@angular2-material/checkbox': createPackageConfFor('checkbox'),
   '@angular2-material/button': createPackageConfFor('button'),
@@ -42,8 +45,6 @@ const packages: any = {
   '@angular2-material/slide-toggle': createPackageConfFor('slide-toggle'),
   '@angular2-material/tabs': createPackageConfFor('tabs'),
   '@angular2-material/toolbar': createPackageConfFor('toolbar'),
-  '@ngrx/core': createPackageConfFor('index'),
-  '@ngrx/store': createPackageConfFor('index'),
   'localforage': { format: 'cjs', defaultExtension: 'js' }
 };
 
@@ -76,7 +77,8 @@ const barrels: string[] = [
 
 const cliSystemConfigPackages: any = {};
 barrels.forEach((barrelName: string) => {
-  cliSystemConfigPackages[barrelName] = { main: 'index' };
+  const main = barrelName === 'rxjs' ? 'Rx' : 'index';
+  cliSystemConfigPackages[barrelName] = { main: main };
 });
 
 /** Type declaration for ambient System. */

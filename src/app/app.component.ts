@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { ROUTER_DIRECTIVES } from '@angular/router';
 import { APP_SHELL_DIRECTIVES } from '@angular/app-shell';
-import { MdSpinner } from '@angular2-material/progress-circle';
 
 import { STATE_AND_DISPATCHER_PROVIDER, APP_CONFIG_PROVIDER } from './shared';
 
@@ -16,7 +15,6 @@ import { STATE_AND_DISPATCHER_PROVIDER, APP_CONFIG_PROVIDER } from './shared';
   directives: [
     ROUTER_DIRECTIVES,
     APP_SHELL_DIRECTIVES,
-    MdSpinner
   ],
   providers: [
     ...STATE_AND_DISPATCHER_PROVIDER,

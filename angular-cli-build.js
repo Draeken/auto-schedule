@@ -21,8 +21,6 @@ module.exports = function(defaults) {
       'firebase/**/*.js',
       //Below are the Material entries
       '@angular2-material/**/*.js',
-      //Below are the Ngrx entries
-      '@ngrx/**/*.+(js|js.map)',
       //Third entries
       'localforage/dist/localforage.min.js',
     ]
