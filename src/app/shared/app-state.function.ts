@@ -1,5 +1,5 @@
 import { Observable, BehaviorSubject } from 'rxjs';
-import { AppState, action, activityHandler, serviceHandler } from './';
+import { AppState, action, activityHandler, serviceHandler } from './index';
 
 export function stateFn(initState: AppState, actions: Observable<action>): Observable<AppState> {
   const combine = s => ({

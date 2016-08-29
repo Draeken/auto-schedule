@@ -1,6 +1,6 @@
 import { OpaqueToken } from '@angular/core';
 
-import { AppConfig } from './';
+import { AppConfig } from './index';
 
 const CONFIG: AppConfig = {
   scheduleDuration: 2 * 7 * 24 * 3600

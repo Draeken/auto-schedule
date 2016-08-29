@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer, BehaviorSubject, Subject } from 'rxjs';
 
-import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './';
+import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './index';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState, DataIO } from '../../shared';
 
 type state = { activities: Activity[] };
@@ -9,7 +9,7 @@ const TIMELINE_DEBOUNCE_TIME = 80;
 
 @Injectable()
 export class ConductorService {
-  schedule = new BehaviorSubject<Activities>(null);
+  schedule = new BehaviorSubject<Activities>(new Activities);
 
   private timeoutActivity: NodeJS.Timer;
   private serviceObservable: Map<string, BehaviorSubject<ServiceQuery[]>>;

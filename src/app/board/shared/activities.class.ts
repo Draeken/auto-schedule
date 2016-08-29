@@ -1,4 +1,4 @@
-import { Task, ServiceQuery } from './';
+import { Task, ServiceQuery } from './index';
 
 export interface Marker {
   serviceName: string;

@@ -3,7 +3,7 @@ import { Observable, Observer } from 'rxjs';
 import { localforage } from 'localforage';
 
 import { Activity } from '../board/shared';
-import { DISPATCHER, STATE, action, AppState } from './';
+import { DISPATCHER, STATE, action, AppState } from './index';
 
 @Injectable()
 export class DataIO {

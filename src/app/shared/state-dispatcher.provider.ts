@@ -1,8 +1,7 @@
 import { OpaqueToken } from '@angular/core';
-import { Inject } from '@angular/core';
 import { Subject } from 'rxjs';
 
-import { initAppState, action, stateFn } from './';
+import { initAppState, action, stateFn } from './index';
 
 export const INIT_STATE = new OpaqueToken('init.state');
 export const DISPATCHER = new OpaqueToken('dispatcher');
@@ -20,6 +19,6 @@ export const STATE_AND_DISPATCHER_PROVIDER = [
   {
     provide: STATE,
     useFactory: stateFn,
-    deps: [new Inject(INIT_STATE), new Inject(DISPATCHER)]
+    deps: [INIT_STATE, DISPATCHER]
   }
 ];

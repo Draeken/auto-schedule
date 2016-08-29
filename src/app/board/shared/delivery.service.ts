@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { FreeAgent, SleepAgent, Agent, LOCAL_URL } from './';
+import { FreeAgent, SleepAgent, Agent, LOCAL_URL } from './index';
 import { DISPATCHER, STATE, action, AppState, ActivateServicesAction } from '../../shared';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class DeliveryService {
   static BASE_SERVICES = [
     'sleep', 'free'
   ];
-  private agents: Map<string, Agent>;
+  private agents = new Map<string, Agent>();
 
   constructor(@Inject(DISPATCHER) private dispatcher: Observer<action>,
               @Inject(STATE) private state: Observable<AppState>) {

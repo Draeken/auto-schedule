@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { DeliveryService, Activities, ServiceQuery } from './';
+import { DeliveryService, Activities, ServiceQuery } from './index';
 import {  } from '../../shared';
 
 @Injectable()

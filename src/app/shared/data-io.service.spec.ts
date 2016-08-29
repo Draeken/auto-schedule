@@ -3,7 +3,7 @@
 import { addProviders, async, inject } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 
-import { action, stateFn, AppState, STATE_AND_DISPATCHER_PROVIDER, DataIO } from './';
+import { action, stateFn, AppState, STATE_AND_DISPATCHER_PROVIDER, DataIO } from './index';
 
 describe('Service: DataIO', () => {
 

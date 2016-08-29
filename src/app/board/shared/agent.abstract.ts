@@ -1,6 +1,6 @@
 import { Observable, Subject } from 'rxjs';
 
-import { Marker, Service, ServiceQuery, Task } from './';
+import { Marker, Service, ServiceQuery, Task } from './index';
 
 export abstract class Agent {
   service: Service;
