@@ -17,7 +17,10 @@ export abstract class Agent {
                            requests: Subject<ServiceQuery[]>): void {
     this.requests = requests;
     this.config.combineLatest(allocation).subscribe(this.checkAllocation);
+    this.checkAllocation([null, []]);
   }
+
+  abstract getInfo(taskId: number): string
 
   abstract endTask(task: Task): void
 

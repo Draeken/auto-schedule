@@ -22,6 +22,13 @@ export class SleepAgent extends Agent {
     //todo: save task
   }
 
+  getInfo(taskId: number): string {
+    switch (taskId) {
+      case 0:
+       return 'Faire dodosh';
+    }
+  }
+
   protected checkAllocation(context: [any, Marker[]]): void {
     const markers = context[1];
     if (true) {

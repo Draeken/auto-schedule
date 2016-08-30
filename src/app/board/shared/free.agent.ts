@@ -22,6 +22,13 @@ export class FreeAgent extends Agent {
     // todo: save task
   }
 
+   getInfo(taskId: number): string {
+     switch (taskId) {
+       case 0:
+        return 'Vous êtes libre';
+     }
+   }
+
   protected checkAllocation(context: [any, Marker[]]): void {
     const markers = context[1];
     if (true) {

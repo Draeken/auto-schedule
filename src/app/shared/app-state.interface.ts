@@ -1,4 +1,4 @@
-import { Activity, Service } from '../board/shared/';
+import { Activity, Service, LOCAL_URL } from '../board/shared/';
 import { UserStates } from './user-states.interface';
 
 const INIT_USER_STATE: UserStates = {

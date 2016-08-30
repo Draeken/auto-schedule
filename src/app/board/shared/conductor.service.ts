@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer, BehaviorSubject, Subject } from 'rxjs';
 
-import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task } from './index';
+import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task, distinctServices } from './index';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState, DataIO } from '../../shared';
 
 type state = { activities: Activity[] };
@@ -9,10 +9,10 @@ const TIMELINE_DEBOUNCE_TIME = 80;
 
 @Injectable()
 export class ConductorService {
-  schedule = new BehaviorSubject<Activities>(new Activities);
+  schedule = new BehaviorSubject<Activities>(new Activities());
 
   private timeoutActivity: NodeJS.Timer;
-  private serviceObservable: Map<string, BehaviorSubject<ServiceQuery[]>>;
+  private serviceObservable = new Map<string, BehaviorSubject<ServiceQuery[]>>();
 
   constructor(private delivery: DeliveryService,
               private dataIO: DataIO,
@@ -22,20 +22,21 @@ export class ConductorService {
               @Inject(APP_CONFIG) private config) {
     this.state
       .pluck('services')
-      .distinctUntilChanged(this.areArrayDistincts)
-      .do(this.mapServices)
-      .map(this.registerServices);
+      .distinctUntilChanged(distinctServices)
+      .do(this.mapServices.bind(this))
+      .subscribe(this.registerServices.bind(this));
   }
 
   private registerServices(services: Service[]): void {
     let rawTimelineObs: Observable<ServiceQuery[][]> = Observable.combineLatest(
       Array.from(this.serviceObservable.values()), (x, y) => [x, y]);
-    let timelineObs = rawTimelineObs
+    const conflictResolver: (Activities) => Activities = this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler);
+    let timelineObs: Observable<Activities> = rawTimelineObs
       .debounceTime(TIMELINE_DEBOUNCE_TIME)
-      .map(this.timelineBuilder)
-      .map(this.conflictHandler.tryToResolveConflicts)
-      .filter(t => t.hasNoConflict)
-      .do(this.registerEndActivity);
+      .map(this.timelineBuilder.bind(this))
+      .map(conflictResolver)
+      .filter((t: Activities) => t.hasNoConflict)
+      .do(this.registerEndActivity.bind(this));
     timelineObs.subscribe(this.schedule);
     services.forEach(s => {
       this.delivery.getAgent(s.name).setConductorRegistration(
@@ -92,22 +93,5 @@ export class ConductorService {
       }
       this.serviceObservable.set(s.name, new BehaviorSubject<ServiceQuery[]>([]));
     });
-  }
-
-  private areArrayDistincts(x: Array<any>, y: Array<any>): boolean {
-    if (!x && !y) {
-      return false;
-    } else if (!x || !y) {
-      return true;
-    }
-    if (x.length !== y.length) {
-      return true;
-    }
-    for (let i = 0; i < x.length; ++i) {
-      if (x[i] !== y[i]) {
-        return true;
-      }
-    }
-    return false;
   }
 }

@@ -1,16 +1,19 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 import { AppState, action, activityHandler, serviceHandler } from './index';
 
+/* TODO: handle ActivateServicesAction */
+
 export function stateFn(initState: AppState, actions: Observable<action>): Observable<AppState> {
-  const combine = s => ({
-    activities: s[0],
-    userStates: null,
-    services: null
-  });
+  const combines = (s: any) => {
+    let appState: AppState = {
+      userStates: null,
+      services: s
+    };
+    return appState;
+  };
   const appStateObs: Observable<AppState> =
-    activityHandler(null, actions).
-    zip(serviceHandler(initState.services, actions)).
-    map(combine);
+    serviceHandler(initState.services, actions).
+    map(combines);
 
   return wrapIntoBehavior(initState, appStateObs);
 }

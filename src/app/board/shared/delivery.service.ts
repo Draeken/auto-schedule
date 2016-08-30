@@ -1,8 +1,8 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { FreeAgent, SleepAgent, Agent, LOCAL_URL } from './index';
 import { DISPATCHER, STATE, action, AppState, ActivateServicesAction } from '../../shared';
+import { FreeAgent, SleepAgent, Agent, LOCAL_URL, Service, distinctServices } from './index';
 
 @Injectable()
 export class DeliveryService {
@@ -15,10 +15,13 @@ export class DeliveryService {
               @Inject(STATE) private state: Observable<AppState>) {
     DeliveryService.BASE_SERVICES.forEach(service =>
       this.agents.set(service, this.getAgentInstance(service)));
-    this.state.map(curState => {
-      this.updateAgentMapping(curState);
-      this.activateBaseService(curState);
-    });
+    this.state
+      .pluck('services')
+      .distinctUntilChanged(distinctServices)
+      .subscribe((services: Service[]) => {
+        this.updateAgentMapping(services);
+        this.activateBaseService(services);
+      });
   }
 
   getAgent(agentName: string): Agent {
@@ -34,8 +37,8 @@ export class DeliveryService {
     }
   }
 
-  private updateAgentMapping(appState: AppState): void {
-    appState.services.forEach(asService => {
+  private updateAgentMapping(services: Service[]): void {
+    services.forEach(asService => {
       const sName = asService.name;
       if (this.agents.has(sName) &&
         this.agents.get(sName).service.url === asService.url) {
@@ -49,12 +52,12 @@ export class DeliveryService {
     });
   }
 
-  private activateBaseService(appState: AppState): void {
-    const services = DeliveryService.BASE_SERVICES
-    .filter(baseService => !appState.services.find(curService =>
+  private activateBaseService(services: Service[]): void {
+    const baseServices = DeliveryService.BASE_SERVICES
+    .filter(baseService => !services.find(curService =>
         curService.name === baseService))
     .map(s => ({ name: s, url: LOCAL_URL }));
-    services.forEach(s => this.agents.set(s.name, this.getAgentInstance(s.name)));
-    this.dispatcher.next(new ActivateServicesAction(services, this.getAgent));
+    baseServices.forEach(s => this.agents.set(s.name, this.getAgentInstance(s.name)));
+    this.dispatcher.next(new ActivateServicesAction(baseServices, this.getAgent));
   }
 }
