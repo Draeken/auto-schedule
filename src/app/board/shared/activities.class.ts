@@ -51,6 +51,7 @@ export class Activities {
 
   get firstTask(): Task {
     if (!this.markers.length) {
+      console.warn('No markers');
       return null;
     }
     const firstMarker = this.markers[0];
@@ -93,7 +94,7 @@ export class Activities {
   }
 
   private isFuzzy(q: ServiceQuery): boolean {
-    return (!q.start || !q.duration);
+    return (!q.start || !q.start) && !q.duration;
   }
 
   private pushMarker(serviceName: string, taskId: number, time: number): void {
