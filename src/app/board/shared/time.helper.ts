@@ -4,7 +4,7 @@ export class TimeHelper {
     let dateBase = new Date();
     let nextDate = new Date();
     nextDate.setHours(hours, minutes);
-    if (nextDate > dateBase) {
+    if (nextDate.getTime() + 1000 > dateBase.getTime()) {
       return nextDate.getTime();
     }
     return nextDate.setDate(nextDate.getDate() + 1);

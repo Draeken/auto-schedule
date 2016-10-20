@@ -20,6 +20,10 @@ export class FreeAgent extends Agent {
 
   endTask(task: Task) {
     // todo: save task
+    this.requests.next([{
+      id: 0,
+      minimalDuration: 1000
+    }]);
   }
 
    getInfo(taskId: number): string {

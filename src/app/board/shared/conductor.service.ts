@@ -1,7 +1,16 @@
 import { Injectable, Inject } from '@angular/core';
-import { Observable, Observer, BehaviorSubject, Subject } from 'rxjs';
+import { Observable, Observer, BehaviorSubject } from 'rxjs';
 
-import { ConflictHandlerService, DeliveryService, Activity, Activities, Marker,  Service, ServiceQuery, Task, distinctServices } from './index';
+import {
+  ConflictHandlerService,
+  DeliveryService,
+  Activity,
+  Activities,
+  Marker,
+  Service,
+  ServiceQuery,
+  Task,
+  distinctServices } from './index';
 import { DISPATCHER, STATE, APP_CONFIG, action, AppState, DataIO } from '../../shared';
 
 type state = { activities: Activity[] };
