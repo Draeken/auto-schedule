@@ -1,33 +1,20 @@
 {
-  "compileOnSave": false,
   "compilerOptions": {
     "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "mapRoot": "/",
-    "module": "commonjs",
+    "lib": ["es6", "dom"],
+    "mapRoot": "./",
+    "module": "es6",
     "moduleResolution": "node",
-    "noEmitOnError": true,
-    "noImplicitAny": false,
-    "outDir": "../dist/",
-    "rootDir": ".",
+    "outDir": "../dist/out-tsc",
     "sourceMap": true,
     "target": "es5",
-    "inlineSources": true
+    "typeRoots": [
+      "../node_modules/@types"
+    ]
   },
-
-  "files": [
-    "main.ts",
-    "main-app-shell.ts",
-    "typings.d.ts"
-  ],
-
-  "filesGlob": [
-    "main.ts",
-    "main-app-shell.ts",
-    "typings.d.ts",
-    "app/**/*.ts",
-    "!app/**/*.spec.ts",
-    "node_modules/angularfire2/firebase3.d.ts"
+  "exclude": [
+    "**/*.spec.ts"
   ]
 }

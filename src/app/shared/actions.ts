@@ -1,4 +1,5 @@
-import { Service, Agent } from '../board/shared';
+import { Agent }    from '../board/agents/agent.abstract';
+import { Service }  from '../board/gears/service';
 
 export class AddActivityAction {
   constructor(public name: string) {}
