@@ -1,7 +1,8 @@
 import { NgModule, Optional, SkipSelf } from '@angular/core';
 
+import { DataIOService }              from './data-io.service';
 import { throwIfAlreadyLoaded }       from './module-import-guard';
-import { stateAndDispatcherProvider } from './state-dispatcher.provider'
+import { stateAndDispatcherProvider } from './state-dispatcher.provider';
 
 @NgModule({
   imports: [
@@ -11,6 +12,7 @@ import { stateAndDispatcherProvider } from './state-dispatcher.provider'
   declarations: [
   ],
   providers: [
+    DataIOService,
     ...stateAndDispatcherProvider
   ]
 })

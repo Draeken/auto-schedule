@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { Observable, Observer, BehaviorSubject } from 'rxjs';
 
 import { ConflictHandlerService } from './conflict-handler.service';
+import { DataIOService } from '../../core/data-io.service';
 import { DeliveryService } from './delivery.service';
 import { Activity } from './activity.interface';
 import { Activities, Marker } from './activities.class';
@@ -22,7 +23,8 @@ export class ConductorService {
   private timeoutActivity: NodeJS.Timer;
   private serviceObservable = new Map<string, BehaviorSubject<ServiceQuery[]>>();
 
-  constructor(private delivery: DeliveryService,
+  constructor(private dataIO: DataIOService,
+              private delivery: DeliveryService,
               private conflictHandler: ConflictHandlerService,
               @Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
@@ -56,10 +58,12 @@ export class ConductorService {
     const firstTask = activities.firstTask;
     if (firstTask.start <= Date.now()) {
       // Save it
+      console.log(`task.start <= date.now`, firstTask);
     }
+    this.dataIO.saveCurrentTask(firstTask);
     const timeToEnd = firstTask.end - Date.now();
     if (timeToEnd < 0) {
-      return;
+      return this.makeThisTimeCount(firstTask);
     }
     const toDo = () => this.makeThisTimeCount(firstTask);
     clearTimeout(this.timeoutActivity);
@@ -71,6 +75,21 @@ export class ConductorService {
     this.delivery.getAgent(task.serviceName).endTask(task);
   }
 
+  private restoreCurrentActivity(activities: Activities): void {
+    const task = this.dataIO.retrieveCurrentTask();
+    if (task.end < Date.now()) {
+      return;
+    }
+    const sName = task.serviceName;
+    const sQuery: ServiceQuery = {
+      id: task.id,
+      start: task.start,
+      end: task.end,
+      minimalDuration: 0
+    };
+    activities.push(sName, sQuery);
+  }
+
   private timelineBuilder(queries: ServiceQuery[][]): Activities {
     let activities = new Activities();
     let serviceNames = this.serviceObservable.keys();
@@ -78,6 +97,7 @@ export class ConductorService {
       let serviceName = serviceNames.next().value;
       squeries.forEach(query => activities.push(serviceName, query));
     });
+    this.restoreCurrentActivity(activities);
     return activities;
   }
 
@@ -87,6 +107,9 @@ export class ConductorService {
       .distinctUntilChanged((x, y) => Activities.distinctMarkers(x, y));
   }
 
+  /**
+   * Delete old services and add new one to the serviceObservable map
+   */
   private mapServices(services: Service[]): void {
     this.serviceObservable.forEach((ob, key) => {
       if (services.findIndex(s => s.name === key) === -1) {
