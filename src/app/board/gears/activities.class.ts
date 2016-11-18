@@ -1,4 +1,5 @@
-import { Task, ServiceQuery } from './index';
+import { Task }         from './task.interface';
+import { ServiceQuery } from './service-query.interface';
 
 export interface Marker {
   serviceName: string;

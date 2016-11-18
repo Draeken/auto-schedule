@@ -1,4 +1,5 @@
-import { Service, Constraint } from './index';
+import { Service }    from './service';
+import { Constraint } from './constraint.interface';
 
 export interface Activity {
   responsible: Service;

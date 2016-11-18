@@ -12,6 +12,9 @@ export class ConflictHandlerService {
     return this.handleFuzzy(timeline);
   }
 
+  /**
+   * Call this.putFuzzy on all timeline.fuzzyEntries
+   */
   private handleFuzzy(timeline: Activities): Activities {
     let queryIter = timeline.fuzzyEntries;
     let queryIterRes = queryIter.next();
@@ -27,6 +30,9 @@ export class ConflictHandlerService {
     return timeline;
   }
 
+  /**
+   * Find schedule hole with query.minimalDuration
+   */
   private putFuzzy(sn: string, query: ServiceQuery, timeline: Activities): void {
     let holes = timeline.getHoles(query.minimalDuration);
     holes.some(markers => {

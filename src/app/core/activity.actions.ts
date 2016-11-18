@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { Activity }                                           from '../board/gears';
+import { Activity }                                           from '../board/gears/activity.interface';
 import { action, AddActivityAction, ActivateServicesAction }  from '../shared/actions';
 
 export function activityHandler(initState: Activity[], actions: Observable<action>): Observable<Activity[]> {

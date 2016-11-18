@@ -1,5 +1,9 @@
 export class TimeHelper {
 
+  static relativeTime(hours: number, minutes: number): number {
+    return Date.now() + TimeHelper.duration(hours, minutes);
+  }
+
   static nextTime(hours: number, minutes: number): number {
     let dateBase = new Date();
     let nextDate = new Date();

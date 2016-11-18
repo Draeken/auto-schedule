@@ -5,14 +5,22 @@ import { action, ActivateServicesAction }       from '../../shared/actions';
 import { AppState }                             from '../../shared/app-state.interface';
 import { dispatcher, state }                    from '../../core/state-dispatcher.provider';
 import { Agent }                                from '../agents/agent.abstract';
-import { SleepAgent, FreeAgent }                from '../agents/agents';
+import { SleepAgent, FreeAgent, TestAgent }     from '../agents/agents';
 import { LOCAL_URL, Service, distinctServices } from './service';
 
 @Injectable()
 export class DeliveryService {
+
+  /**
+   * These services are loaded automatically
+   */
   static BASE_SERVICES = [
-    'sleep', 'free'
+    'sleep', 'test'
   ];
+
+  /**
+   * Map<ServiceName, Agent>
+   */
   private agents = new Map<string, Agent>();
 
   constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
@@ -38,6 +46,8 @@ export class DeliveryService {
         return new SleepAgent(this.state);
       case 'free':
         return new FreeAgent(this.state);
+      case 'test':
+        return new TestAgent(this.state);
     }
   }
 
