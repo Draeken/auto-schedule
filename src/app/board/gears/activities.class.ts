@@ -50,22 +50,30 @@ export class Activities {
     return !this.hasConflict;
   }
 
-  get firstTask(): Task {
+  get firstTasks(): Task[] {
     if (!this.markers.length) {
       console.warn('No markers');
-      return null;
+      return [];
     }
-    const firstMarker = this.markers[0];
-    const id = firstMarker.taskId;
-    const serviceName = firstMarker.serviceName;
-    const start = firstMarker.time;
-    const end = this.markers.find(m => m.taskId === id && m.serviceName === serviceName && m !== firstMarker).time;
-    return {
-      id: id,
-      start: start,
-      serviceName: serviceName,
-      end: end
-    };
+    let firstTasks: Task[] = [];
+    let markerI = 0;
+    let markerSearch: Marker[] = [this.markers[markerI++]];
+    let addToFirst = (mStart: Marker, mEnd: Marker) => firstTasks.push(
+      {
+        id: mStart.taskId,
+        start: mStart.time,
+        serviceName: mStart.serviceName,
+        end: mEnd.time
+      });
+    while (markerSearch.length > 0) {
+      const marker = this.markers[markerI];
+      const siblingMarkerI = markerSearch.findIndex(m => m.taskId === marker.taskId && m.serviceName === marker.serviceName);
+      if (siblingMarkerI !== -1) {
+        let mStart: Marker = markerSearch.splice(siblingMarkerI, 1)[0];
+        addToFirst(mStart, marker);
+      }
+    }
+    return firstTasks;
   }
 
   getHoles(biggerThan = 1000): [Marker, Marker][] {

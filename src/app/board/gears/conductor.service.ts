@@ -54,8 +54,11 @@ export class ConductorService {
     });
   }
 
+  /**
+   * Refactor to handle array of tasks
+   */
   private registerEndActivity(activities: Activities) {
-    const firstTask = activities.firstTask;
+    const firstTask = activities.firstTasks[0];
     if (firstTask.start <= Date.now()) {
       // Save it
       console.log(`task.start <= date.now`, firstTask);

@@ -23,15 +23,11 @@ export class FocusComponent implements OnInit {
 
   ) { }
 
-  get firstActivity(): Observable<string> {
-    return this.conductor.schedule.map(schedule => {
-      const firstTask = schedule.firstTask;
-      if (firstTask === null) {
-        return 'Aucune activitée';
-      }
-      let agent = this.delivery.getAgent(firstTask.serviceName);
-      return agent.getInfo(firstTask.id);
-    });
+  get firstActivity(): Observable<string[]> {
+    return this.conductor.schedule.map(schedule => schedule.firstTasks).map(tasks => tasks.map(t => {
+      let agent = this.delivery.getAgent(t.serviceName);
+      return agent.getInfo(t.id);
+    }));
   }
 
   ngOnInit() {
