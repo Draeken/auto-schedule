@@ -58,7 +58,11 @@ export class ConductorService {
    * Refactor to handle array of tasks
    */
   private registerEndActivity(activities: Activities) {
-    const firstTask = activities.firstTasks[0];
+    const firstTasks = activities.firstTasks;
+    if (!firstTasks.length) {
+      return;
+    }
+    const firstTask = firstTasks[0];
     if (firstTask.start <= Date.now()) {
       // Save it
       console.log(`task.start <= date.now`, firstTask);
@@ -80,16 +84,22 @@ export class ConductorService {
 
   private restoreCurrentActivity(activities: Activities): void {
     const task = this.dataIO.retrieveCurrentTask();
-    if (task.end < Date.now()) {
+    if (!task || task.end < Date.now()) {
       return;
     }
     const sName = task.serviceName;
+
+    if (activities.filter(sName).findIndex(m => m.taskId === task.id) !== -1) {
+      return;
+    }
+
     const sQuery: ServiceQuery = {
       id: task.id,
       start: task.start,
       end: task.end,
       minimalDuration: 0
     };
+
     activities.push(sName, sQuery);
   }
 
@@ -97,6 +107,9 @@ export class ConductorService {
     let activities = new Activities();
     let serviceNames = this.serviceObservable.keys();
     queries.forEach(squeries => {
+      if (squeries === undefined) {
+        return;
+      }
       let serviceName = serviceNames.next().value;
       squeries.forEach(query => activities.push(serviceName, query));
     });

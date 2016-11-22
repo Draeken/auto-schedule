@@ -29,7 +29,9 @@ export class SleepAgent extends Agent {
   getInfo(taskId: number): string {
     switch (taskId) {
       case 0:
-       return 'Faire dodosh';
+        return 'Se préparer à dodosh';
+      case 1:
+        return 'Pas d\'écran bleu !';
     }
   }
 
@@ -37,9 +39,14 @@ export class SleepAgent extends Agent {
     const markers = context[1];
     if (true) {
       this.requests.next([{
+        id: 1,
+        start: TimeHelper.relativeTime(0, 0.1),
+        duration: TimeHelper.duration(5),
+        minimalDuration: TimeHelper.duration(1)
+      }, {
         id: 0,
-        start: TimeHelper.nextTime(22, 42),
-        duration: TimeHelper.duration(8),
+        start: TimeHelper.relativeTime(0, 0.2),
+        duration: TimeHelper.duration(5),
         minimalDuration: TimeHelper.duration(1)
       }]);
     }

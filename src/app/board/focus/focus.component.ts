@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject }      from '@angular/core';
-import  { Observable, Observer }  from 'rxjs';
+import { Observable, Observer }  from 'rxjs';
 
 import { dispatcher, state }  from '../../core/state-dispatcher.provider';
 import { action }             from '../../shared/actions';
@@ -24,10 +24,12 @@ export class FocusComponent implements OnInit {
   ) { }
 
   get firstActivity(): Observable<string[]> {
-    return this.conductor.schedule.map(schedule => schedule.firstTasks).map(tasks => tasks.map(t => {
-      let agent = this.delivery.getAgent(t.serviceName);
-      return agent.getInfo(t.id);
-    }));
+    return this.conductor.schedule.map(schedule => {
+      return schedule.firstTasks.map(task => {
+        let agent = this.delivery.getAgent(task.serviceName);
+        return agent.getInfo(task.id);
+      });
+    });
   }
 
   ngOnInit() {

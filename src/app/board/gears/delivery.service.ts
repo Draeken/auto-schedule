@@ -15,7 +15,7 @@ export class DeliveryService {
    * These services are loaded automatically
    */
   static BASE_SERVICES = [
-    'sleep', 'test'
+    'sleep'
   ];
 
   /**

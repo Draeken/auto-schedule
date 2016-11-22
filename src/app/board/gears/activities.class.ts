@@ -66,11 +66,13 @@ export class Activities {
         end: mEnd.time
       });
     while (markerSearch.length > 0) {
-      const marker = this.markers[markerI];
+      const marker = this.markers[markerI++];
       const siblingMarkerI = markerSearch.findIndex(m => m.taskId === marker.taskId && m.serviceName === marker.serviceName);
       if (siblingMarkerI !== -1) {
         let mStart: Marker = markerSearch.splice(siblingMarkerI, 1)[0];
         addToFirst(mStart, marker);
+      } else {
+        markerSearch.push(marker);
       }
     }
     return firstTasks;
@@ -123,15 +125,12 @@ export class Activities {
       this.pushMarker(sn, q.id, start);
       if (q.duration && !end) {
         end = start + q.duration;
-        this.pushMarker(sn, q.id, end);
       }
     }
-    if (end) {
-      this.pushMarker(sn, q.id, end);
-      if (q.duration && !start) {
-        start = end - q.duration;
-        this.pushMarker(sn, q.id, start);
-      }
+    this.pushMarker(sn, q.id, end);
+    if (q.duration && !start) {
+      start = end - q.duration;
+      this.pushMarker(sn, q.id, start);
     }
   }
 }
