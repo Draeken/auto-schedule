@@ -4,7 +4,7 @@ import { Service, LOCAL_URL } from '../gears/service';
 import { Task }               from '../gears/task.interface';
 import { TimeHelper }         from '../gears/time.helper';
 
-interface SleepConfig {
+export interface SleepConfig {
   preferedSleepTime: number;
   preferedWakeupTime: number;
 }

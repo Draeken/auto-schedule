@@ -5,10 +5,10 @@ export class AddActivityAction {
   constructor(public name: string) {}
 }
 
-type f = (n: string) => Agent;
+export type strToAgent = (n: string) => Agent;
 
 export class ActivateServicesAction {
-  constructor(public services: Service[], public getAgent: f) {}
+  constructor(public services: Service[], public getAgent: strToAgent) {}
 }
 
 export type action = AddActivityAction | ActivateServicesAction;
