@@ -8,34 +8,64 @@
   (https://david-dm.org/PBM42/auto-schedule/dev-status.svg)]
   (https://david-dm.org/PBM42/auto-schedule?type=dev)
 
-# AutoSchedule
+# Project overview
 
-This project was generated with [angular-cli](https://github.com/angular/angular-cli) version 1.0.0-beta.20-4.
+## Goals
 
-## Development server
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+ - Have a schedule automatically generated and tolerant to the unexpected.
+ - Help user to focus on a task, manage his priorities, achieve his projects.
+ - Help user to make the good choice in unforeseen conditions.
+ - Progressive Web App with offline support.
 
-## Code scaffolding
+Ref | Description
+--- | -----------
+GL01 | Auto-generate base schedule with sleep, eat, wash, work and shopping slots
+GL02 | Allow the user to add miscellaneous, generics activity/task
+GL03 | Allow the user to self-track his use of time
+GL04 | Let the app manage time allocation for more user’s activity, with third-party
+GL05 | Task can be done with multiple person. Let the app be social
+GL06 | More interaction: User could ask the consequences of doing what he wants, or he could share his state
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive/pipe/service/class`.
+## Project Phases
 
-## Build
+Ref | Name | Description
+--- | ---- | -----------
+PP01 | Proto | Prototype with only GL01 and GL02, no presentation
+PP02 | Nice Proto | Add presentation and GL03
+PP03 | Networked | Development of additional agents, GL04, GL05
+PP04 | Interacted | GL06
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
+# Application Layer Specification
 
-## Running unit tests
+## Features
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### For Proto (PP01)
 
-## Running end-to-end tests
+Ref | Description
+--- | -----------
+PP01F01 | Display information about current task/effect
+PP01F02 | Button for adding miscellaneous task
+PP01F03 | Display the whole planning
+PP01F04 | Generic agent
+PP01F05 | Agent free time
+PP01F06 | Agent eat (dummy)
+PP01F07 | Agent wash
+PP01F08 | Agent shopping
+PP01F09 | Agent sleep
+PP01F10 | Agent transit (dummy)
+PP01F11 | Conflict resolver
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-Before running the tests make sure you are serving the app via `ng serve`.
+### For Nice Proto (PP02)
 
-## Deploying to Github Pages
-
-Run `ng github-pages:deploy` to deploy to Github Pages.
-
-## Further help
-
-To get more help on the `angular-cli` use `ng --help` or go check out the [Angular-CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+Ref | Description
+--- | -----------
+PP02F01 | Onboarding - Quick Start
+PP02F02 | Display and manage current task
+PP02F03 | Let the user configure base agent
+PP02F04 | User can add activity (condition on weather or user state)
+PP02F05 | View a chart of time allocation by activity
+PP02F06 | Display a planning historic with search/filter capacity
+PP02F07 | Agent eat
+PP02F08 | Agent transit
+PP02F09 | Agent finance
+PP02F10 | Sync between multiple device
