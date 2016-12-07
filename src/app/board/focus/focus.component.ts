@@ -14,25 +14,41 @@ import { DeliveryService }    from '../gears/delivery.service';
   styleUrls: ['./focus.component.sass']
 })
 export class FocusComponent implements OnInit {
+  private tasks: Observable<Task[]>;
+  private timelefts: Observable<number[]>;
 
   constructor(
     @Inject(dispatcher) private dispatcher: Observer<action>,
     @Inject(state) private state: Observable<AppState>,
     private conductor: ConductorService,
     private delivery: DeliveryService
-
-  ) { }
-
-  get firstActivity(): Observable<string[]> {
-    return this.conductor.schedule.map(schedule => {
-      return schedule.firstTasks.map(task => {
-        let agent = this.delivery.getAgent(task.serviceName);
-        return agent.getInfo(task.id);
-      });
-    });
+  ) {
+    this.tasks = this.firstTasks();
+    this.timelefts = this.computeTimelefts();
   }
 
   ngOnInit() {
   }
 
+  get tasksDescription(): Observable<string[]> {
+    return this.tasks.map(tasks => tasks.map(task => {
+      let agent = this.delivery.getAgent(task.serviceName);
+      return agent.getInfo(task.id);
+    }));
+  }
+
+  private computeTimelefts(): Observable<number[]> {
+    let timerObs = Observable.interval(1000);
+    return Observable.combineLatest(this.tasks.map(tasks => tasks.map(task => {
+      return task.end;
+    })), timerObs)
+      .map((val: [number[], number]) => [val[0], Date.now()])
+      .map((val: [number[], number]) => val[0].map(end => end - val[1]));
+  }
+
+  private firstTasks(): Observable<Task[]> {
+    return this.conductor.schedule.map(schedule => {
+      return schedule.firstTasks;
+    });
+  }
 }
