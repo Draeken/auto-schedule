@@ -4,15 +4,27 @@ import { Marker }       from '../gears/activities.class';
 import { Service }      from '../gears/service';
 import { ServiceQuery } from '../gears/service-query.interface';
 import { Task }         from '../gears/task.interface';
+import { Occurence }    from './occurence.interface';
 
 export abstract class Agent {
   service: Service;
+
   protected config: Subject<any>;
   protected requests: Subject<ServiceQuery[]>;
 
-  constructor() {
+  private readonly lsPrefix: string;
+  private readonly lsOccurenceKey = 'occurences';
+
+  constructor(name: string) {
     this.config = new Subject<any>();
+    this.lsPrefix = name;
   }
+
+  abstract getInfo(taskId: number): string
+
+  abstract endTask(task: Task): void
+
+  protected abstract checkAllocation(context: [any, Marker[]]): void
 
   setComponentRegistration(obs: Observable<any>): void {
     obs.subscribe(this.config);
@@ -25,9 +37,23 @@ export abstract class Agent {
     this.checkAllocation([null, []]);
   }
 
-  abstract getInfo(taskId: number): string
+  protected getOccurences(): Occurence[] {
+    const occ: Occurence[] = JSON.parse(localStorage.getItem(this.lsPrefix + this.lsOccurenceKey));
+    return occ ? occ : [];
+  }
 
-  abstract endTask(task: Task): void
+  protected getLastOccurence(): Occurence {
+    const occ = this.getOccurences();
+    return occ.length ? occ[occ.length - 1] : null;
+  }
 
-  protected abstract checkAllocation(context: [any, Marker[]]): void
+  protected saveOccurence(task: Task) {
+    let occ = this.getOccurences();
+    occ.push({
+      start: task.start,
+      end: task.end,
+      id: task.id
+    });
+    localStorage.setItem(this.lsPrefix + this.lsOccurenceKey, JSON.stringify(occ));
+  }
 }

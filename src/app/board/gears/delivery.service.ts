@@ -43,11 +43,11 @@ export class DeliveryService {
   private getAgentInstance(agentName: string): Agent {
     switch (agentName) {
       case 'sleep':
-        return new SleepAgent(this.state);
+        return new SleepAgent();
       case 'free':
-        return new FreeAgent(this.state);
+        return new FreeAgent();
       case 'test':
-        return new TestAgent(this.state);
+        return new TestAgent();
     }
   }
 

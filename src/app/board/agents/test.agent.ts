@@ -8,17 +8,21 @@ import { TimeHelper }         from '../gears/time.helper';
 import { AppState }           from '../../shared/app-state.interface';
 
 export class TestAgent extends Agent {
-  private idCounter = 0;
+  private idCounter: number;
+  private readonly name: string;
 
-  constructor(private appState: Observable<AppState>) {
-    super();
+  constructor() {
+    const name = 'test';
+    super(name);
+    this.idCounter = 0;
+    this.name = name;
     this.config.startWith({});
   }
 
   get service() {
     const service: Service = {
       url: LOCAL_URL,
-      name: 'test'
+      name: this.name
     };
     return service;
   }

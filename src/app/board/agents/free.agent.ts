@@ -8,16 +8,19 @@ import { TimeHelper }         from '../gears/time.helper';
 import { AppState }           from '../../shared/app-state.interface';
 
 export class FreeAgent extends Agent {
+  private readonly name: string;
 
-  constructor(private appState: Observable<AppState>) {
-    super();
+  constructor() {
+    const name = 'free';
+    super(name);
+    this.name = name;
     this.config.startWith({});
   }
 
   get service() {
     const service: Service = {
       url: LOCAL_URL,
-      name: 'free'
+      name: this.name
     };
     return service;
   }
