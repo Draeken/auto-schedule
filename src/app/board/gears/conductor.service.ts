@@ -20,7 +20,7 @@ const TIMELINE_DEBOUNCE_TIME = 80;
 export class ConductorService {
   schedule = new BehaviorSubject<Activities>(new Activities());
 
-  private timeoutActivity: NodeJS.Timer;
+  private taskTimers: Map<string, NodeJS.Timer> = new Map();
   private serviceObservable = new Map<string, BehaviorSubject<ServiceQuery[]>>();
 
   constructor(private dataIO: DataIOService,
@@ -62,19 +62,21 @@ export class ConductorService {
     if (!firstTasks.length) {
       return;
     }
-    const firstTask = firstTasks[0];
-    if (firstTask.start <= Date.now()) {
-      // Save it
-      console.log(`task.start <= date.now`, firstTask);
-    }
-    this.dataIO.saveCurrentTask(firstTask);
-    const timeToEnd = firstTask.end - Date.now();
-    if (timeToEnd < 0) {
-      return this.makeThisTimeCount(firstTask);
-    }
-    const toDo = () => this.makeThisTimeCount(firstTask);
-    clearTimeout(this.timeoutActivity);
-    this.timeoutActivity = setTimeout(toDo, timeToEnd);
+    this.dataIO.saveCurrentTasks(firstTasks);
+
+    const now = Date.now();
+    firstTasks.forEach(task => {
+      const timeToEnd = task.end - now;
+      if (timeToEnd < 0) {
+        return this.makeThisTimeCount(task);
+      }
+      const toDo = () => this.makeThisTimeCount(task);
+      this.taskTimers.set(this.getTaskKey(task), setTimeout(toDo, timeToEnd));
+    });
+  }
+
+  private getTaskKey(task: Task): string {
+    return task.serviceName + task.id;
   }
 
   private makeThisTimeCount(task: Task): void {
@@ -83,24 +85,28 @@ export class ConductorService {
   }
 
   private restoreCurrentActivity(activities: Activities): void {
-    const task = this.dataIO.retrieveCurrentTask();
-    if (!task || task.end < Date.now()) {
-      return;
-    }
-    const sName = task.serviceName;
+    const tasks = this.dataIO.retrieveCurrentTasks();
+    const now = Date.now();
 
-    if (activities.filter(sName).findIndex(m => m.taskId === task.id) !== -1) {
-      return;
-    }
+    tasks.forEach(task => {
+      if (task.end < now) {
+        return;
+      }
+      const sName = task.serviceName;
 
-    const sQuery: ServiceQuery = {
-      id: task.id,
-      start: task.start,
-      end: task.end,
-      minimalDuration: 0
-    };
+      if (activities.filter(sName).findIndex(m => m.taskId === task.id) !== -1) {
+        return;
+      }
 
-    activities.push(sName, sQuery);
+      const sQuery: ServiceQuery = {
+        id: task.id,
+        start: task.start,
+        end: task.end,
+        minimalDuration: 0
+      };
+
+      activities.push(sName, sQuery);
+    });
   }
 
   private timelineBuilder(queries: ServiceQuery[][]): Activities {

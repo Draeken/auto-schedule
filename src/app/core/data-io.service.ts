@@ -4,16 +4,17 @@ import { Task } from '../board/gears/task.interface';
 
 @Injectable()
 export class DataIOService {
-  private readonly currentTask = 'current-task';
+  private readonly currentTasks = 'current-tasks';
 
   constructor() {}
 
-  saveCurrentTask(task: Task): void {
-    this.saveToLocalStorage(this.currentTask, task);
+  saveCurrentTasks(tasks: Task[]): void {
+    this.saveToLocalStorage(this.currentTasks, tasks);
   }
 
-  retrieveCurrentTask(): Task {
-    return this.retrieveFromLocalStorage(this.currentTask);
+  retrieveCurrentTasks(): Task[] {
+    const currTasks = this.retrieveFromLocalStorage(this.currentTasks);
+    return currTasks ? currTasks : [];
   }
 
   private retrieveFromLocalStorage(key: string): any {
