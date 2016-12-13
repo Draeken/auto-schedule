@@ -9,13 +9,12 @@ import { ConductorService }   from '../gears/conductor.service';
 import { DeliveryService }    from '../gears/delivery.service';
 
 @Component({
-  selector: 'as-focus',
-  templateUrl: './focus.component.html',
-  styleUrls: ['./focus.component.sass']
+  selector: 'as-planning',
+  templateUrl: './planning.component.html',
+  styleUrls: ['./planning.component.scss']
 })
-export class FocusComponent implements OnInit {
+export class PlanningComponent implements OnInit {
   private tasks: Observable<Task[]>;
-  private timelefts: Observable<number[]>;
 
   constructor(
     @Inject(dispatcher) private dispatcher: Observer<action>,
@@ -24,26 +23,13 @@ export class FocusComponent implements OnInit {
     private delivery: DeliveryService
   ) {
     this.tasks = this.firstTasks();
-    this.timelefts = this.computeTimelefts();
   }
 
   ngOnInit() {
   }
 
-  get tasksDescription(): Observable<string[]> {
-    return this.tasks.map(tasks => tasks.map(task => {
-      let agent = this.delivery.getAgent(task.serviceName);
-      return agent.getInfo(task.id);
-    }));
-  }
-
-  private computeTimelefts(): Observable<number[]> {
-    let timerObs = Observable.interval(1000);
-    return Observable.combineLatest(this.tasks.map(tasks => tasks.map(task => {
-      return task.end;
-    })), timerObs)
-      .map((val: [number[], number]) => [val[0], Date.now()])
-      .map((val: [number[], number]) => val[0].map(end => end - val[1]));
+  private getTaskDescription(task: Task): string {
+    return this.delivery.getAgent(task.serviceName).getInfo(task.id);
   }
 
   private firstTasks(): Observable<Task[]> {
