@@ -1,9 +1,10 @@
 import { NgModule }     from '@angular/core';
 import { RouterModule } from '@angular/router';
 
-import { BoardComponent }     from './board.component';
-import { FocusComponent }     from './focus/focus.component';
-import { PlanningComponent }  from './planning/planning.component';
+import { BoardComponent }       from './board.component';
+import { FocusComponent }       from './focus/focus.component';
+import { PlanningComponent }    from './planning/planning.component';
+import { CreateTaskComponent }  from './create-task/create-task.component';
 
 @NgModule({
   imports: [
@@ -14,6 +15,7 @@ import { PlanningComponent }  from './planning/planning.component';
         children: [
           { path: '', component: FocusComponent },
           { path: 'planning', component: PlanningComponent },
+          { path: 'create', component: CreateTaskComponent },
         ]
       }
     ])

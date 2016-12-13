@@ -1,0 +1,56 @@
+<div class="container">
+    <h1>Task creation form</h1>
+    <form (ngSubmit)="onSubmit()">
+      <label for="name">Name</label>
+      <input type="text" id=name required [(ngModel)]="model.name" name="name" />
+      <br />
+      <label for="hour">Hour restriction</label>
+      <input type="text" id=hour [(ngModel)]="model.hourRestriction" name="hourRestriction"/>
+<br />
+      <label for="weekday">Week day restriction</label>
+      <input type="text" id=weekday [(ngModel)]="model.weekdayRestriction" name="weekdayRestriction" />
+<br />
+      <label for="day">Day restriction</label>
+      <input type="text" id=day [(ngModel)]="model.dayRestriction" name="dayRestriction" />
+      <label for="wdim">Weekday in month restriction</label>
+      <br />
+      <input type="text" id=wdim [(ngModel)]="model.weekdayInMonthRestriction" name="weekdayInMonthRestriction" />
+<br />
+      <label for="month">Month restriction</label>
+      <input type="text" id=month [(ngModel)]="model.monthRestriction" name="monthRestriction" />
+<br />
+      <input type="number" id=recc_0 [(ngModel)]="model.reccPart0" name="reccPart0" />
+      <select [(ngModel)]="model.reccPart1" name="reccPart1" >
+        <option value="per">per</option>
+        <option value="every">every</option>
+      </select>
+      <input type="number" id=recc_2 [(ngModel)]="model.reccPart2" name="reccPart2" />
+      <input type="string" id=recc_3 [(ngModel)]="model.reccPart3" name="reccPart3" />
+<br />
+      <label for="due_date">Due date</label>
+      <input type="date" id=due_date [(ngModel)]="model.dueDate" name="dueDate" />
+      <label for="time">Time estimation</label>
+      <br />
+      <input type="number" id=time [(ngModel)]="model.timeEstimation" name="timeEstimation" />
+<br />
+      <label for="min_time">Minimal time in one shot</label>
+      <input type="number" id=min_time [(ngModel)]="model.minTime" name="minTime" />
+<br />
+      <label for="max_time">Maximal time in one shot</label>
+      <input type="number" id=max_time [(ngModel)]="model.maxTime" name="maxTime" />
+<br />
+      <label for="min_pause">Minimal pause in one shot</label>
+      <input type="number" id=min_pause [(ngModel)]="model.minPause" name="minPause" />
+<br />
+      <label for="max_pause">Maximal pause in one shot</label>
+      <input type="number" id=max_pause [(ngModel)]="model.maxPause" name="maxPause" />
+<br />
+      <label for="simult">Eligible for simultaneity</label>
+      <input type="checkbox" id=simult [(ngModel)]="model.eligibleForSimult" name="eligibleForSimult" />
+<br />
+      <label for="relativ">Relative to others</label>
+      <input type="text" id=relativ [(ngModel)]="model.relativeToOther" name="relativeToOther" />
+<br />
+      <button type="submit" >Submit</button>
+    </form>
+</div>
