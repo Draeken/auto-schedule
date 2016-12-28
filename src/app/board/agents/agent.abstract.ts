@@ -5,9 +5,11 @@ import { Service }      from '../gears/service';
 import { ServiceQuery } from '../gears/service-query.interface';
 import { Task }         from '../gears/task.interface';
 import { Occurence }    from './occurence.interface';
+import { QuickAction }  from './quick-action.interface'
 
 export abstract class Agent {
   service: Service;
+  quickActions: QuickAction[] = [];
 
   protected config: Subject<any>;
   protected requests: Subject<ServiceQuery[]>;
@@ -18,6 +20,10 @@ export abstract class Agent {
   constructor(name: string) {
     this.config = new Subject<any>();
     this.lsPrefix = name;
+    this.quickActions.push({
+      name: "Config",
+      url: name + "config"
+    });
   }
 
   abstract getInfo(taskId: number): string

@@ -1,9 +1,11 @@
 import { NgModule }     from '@angular/core';
 import { RouterModule } from '@angular/router';
 
-import { BoardComponent }     from './board.component';
-import { FocusComponent }     from './focus/focus.component';
-import { PlanningComponent }  from './planning/planning.component';
+import { BoardComponent }       from './board.component';
+import { FocusComponent }       from './focus/focus.component';
+import { PlanningComponent }    from './planning/planning.component';
+import { AgentSetupComponent }  from './agent-setup/agent-setup.component';
+import { agentRouting }         from './agents/agent-routing';
 
 @NgModule({
   imports: [
@@ -14,8 +16,11 @@ import { PlanningComponent }  from './planning/planning.component';
         children: [
           { path: '', component: FocusComponent },
           { path: 'planning', component: PlanningComponent },
+
         ]
-      }
+      },
+      { path: 'agents', component: AgentSetupComponent, outlet: 'parameter'},
+      ...agentRouting
     ])
   ],
   exports: [

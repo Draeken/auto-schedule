@@ -1,0 +1,15 @@
+<p>
+  agent-setup works!
+</p>
+<table>
+  <tr>
+    <th>      Agent name    </th>
+    <th>      Action        </th>
+  </tr>
+<tr *ngFor="let agent of (agents | async)">
+  <td>{{ agent.service.name }}</td>
+  <td *ngFor="let quickaction of agent.quickActions">
+    <span (click)="showAction(quickaction.url)">{{ quickaction.name }}</span>
+  </td>
+</tr>
+</table>
