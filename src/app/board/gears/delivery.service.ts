@@ -21,23 +21,27 @@ export class DeliveryService {
   /**
    * Map<ServiceName, Agent>
    */
-  private agents = new Map<string, Agent>();
+  private agentMap = new Map<string, Agent>();
+
+  private services: Observable<{}>;
 
   constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
     DeliveryService.BASE_SERVICES.forEach(service =>
-      this.agents.set(service, this.getAgentInstance(service)));
-    this.state
-      .pluck('services')
-      .distinctUntilChanged(distinctServices)
-      .subscribe((services: Service[]) => {
-        this.updateAgentMapping(services);
-        this.activateBaseService(services);
-      });
+      this.agentMap.set(service, this.getAgentInstance(service)));
+    this.services = this.state.pluck('services').distinctUntilChanged(distinctServices);
+    this.services.subscribe((services: Service[]) => {
+      this.updateAgentMapping(services);
+      this.activateBaseService(services);
+    });
+  }
+
+  get agents(): Observable<Agent[]> {
+    return this.services.map((services: Service[]) => services.map(s => this.getAgent(s.name)));
   }
 
   getAgent(agentName: string): Agent {
-    return this.agents.get(agentName);
+    return this.agentMap.get(agentName);
   }
 
   private getAgentInstance(agentName: string): Agent {
@@ -54,12 +58,12 @@ export class DeliveryService {
   private updateAgentMapping(services: Service[]): void {
     services.forEach(asService => {
       const sName = asService.name;
-      if (this.agents.has(sName) &&
-        this.agents.get(sName).service.url === asService.url) {
+      if (this.agentMap.has(sName) &&
+        this.agentMap.get(sName).service.url === asService.url) {
           return;
       }
       if (asService.url === LOCAL_URL) {
-        this.agents.set(sName, this.getAgentInstance(sName));
+        this.agentMap.set(sName, this.getAgentInstance(sName));
       } else {
         /* TODO: Wrapper for external agent */
       }
@@ -71,7 +75,7 @@ export class DeliveryService {
     .filter(baseService => !services.find(curService =>
         curService.name === baseService))
     .map(s => ({ name: s, url: LOCAL_URL }));
-    baseServices.forEach(s => this.agents.set(s.name, this.getAgentInstance(s.name)));
+    baseServices.forEach(s => this.agentMap.set(s.name, this.getAgentInstance(s.name)));
     this.dispatcher.next(new ActivateServicesAction(baseServices, this.getAgent));
   }
 }
