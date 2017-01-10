@@ -3,8 +3,6 @@ export interface Service {
   url: string;
 }
 
-export const LOCAL_URL = 'localhost';
-
 export function distinctServices(x: Service[], y: Service[]): boolean {
   if (!x && !y) {
     return false;

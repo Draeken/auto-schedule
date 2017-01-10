@@ -1,12 +1,12 @@
 import { Injectable, Inject }   from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { action, ActivateServicesAction }       from '../../shared/actions';
-import { AppState }                             from '../../shared/app-state.interface';
-import { dispatcher, state }                    from '../../core/state-dispatcher.provider';
-import { Agent }                                from '../agents/agent.abstract';
-import { SleepAgent, FreeAgent, TestAgent }     from '../agents/agents';
-import { LOCAL_URL, Service, distinctServices } from './service';
+import { action, ActivateServicesAction } from '../../shared/actions';
+import { AppState }                       from '../../shared/app-state.interface';
+import { dispatcher, state }              from '../../core/state-dispatcher.provider';
+import { Agent }                          from '../agents/agent.abstract';
+import { AgentOnline }                    from '../agents/agent-online.class';
+import { Service, distinctServices }      from './service';
 
 @Injectable()
 export class DeliveryService {
@@ -27,8 +27,8 @@ export class DeliveryService {
 
   constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
-    DeliveryService.BASE_SERVICES.forEach(service =>
-      this.agentMap.set(service, this.getAgentInstance(service)));
+    // DeliveryService.BASE_SERVICES.forEach(service =>
+    //   this.agentMap.set(service, this.getAgentInstance(service)));
     this.services = this.state.pluck('services').distinctUntilChanged(distinctServices);
     this.services.subscribe((services: Service[]) => {
       this.updateAgentMapping(services);
@@ -44,17 +44,6 @@ export class DeliveryService {
     return this.agentMap.get(agentName);
   }
 
-  private getAgentInstance(agentName: string): Agent {
-    switch (agentName) {
-      case 'sleep':
-        return new SleepAgent();
-      case 'free':
-        return new FreeAgent();
-      case 'test':
-        return new TestAgent();
-    }
-  }
-
   private updateAgentMapping(services: Service[]): void {
     services.forEach(asService => {
       const sName = asService.name;
@@ -62,11 +51,7 @@ export class DeliveryService {
         this.agentMap.get(sName).service.url === asService.url) {
           return;
       }
-      if (asService.url === LOCAL_URL) {
-        this.agentMap.set(sName, this.getAgentInstance(sName));
-      } else {
-        /* TODO: Wrapper for external agent */
-      }
+      this.agentMap.set(sName, new AgentOnline(sName, asService.url));
     });
   }
 
@@ -74,8 +59,8 @@ export class DeliveryService {
     const baseServices = DeliveryService.BASE_SERVICES
     .filter(baseService => !services.find(curService =>
         curService.name === baseService))
-    .map(s => ({ name: s, url: LOCAL_URL }));
-    baseServices.forEach(s => this.agentMap.set(s.name, this.getAgentInstance(s.name)));
-    this.dispatcher.next(new ActivateServicesAction(baseServices, this.getAgent));
+    .map(s => ({ name: s, url: 'localhost' })); // Set real url of base services
+    baseServices.forEach(s => this.agentMap.set(s.name, new AgentOnline(s.name, s.url)));
+    this.dispatcher.next(new ActivateServicesAction(baseServices));
   }
 }
