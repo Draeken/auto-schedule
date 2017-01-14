@@ -8,6 +8,7 @@ import { DeliveryService }        from './gears/delivery.service';
 import { ConflictHandlerService } from './gears/conflict-handler.service';
 import { FocusComponent }         from './focus/focus.component';
 import { PlanningComponent }      from './planning/planning.component';
+import { LoginComponent } from './login/login.component';
 
 @NgModule({
   imports: [
@@ -17,7 +18,8 @@ import { PlanningComponent }      from './planning/planning.component';
   declarations: [
     BoardComponent,
     FocusComponent,
-    PlanningComponent
+    PlanningComponent,
+    LoginComponent
   ],
   providers: [
     ConductorService,
