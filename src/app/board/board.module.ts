@@ -8,7 +8,8 @@ import { DeliveryService }        from './gears/delivery.service';
 import { ConflictHandlerService } from './gears/conflict-handler.service';
 import { FocusComponent }         from './focus/focus.component';
 import { PlanningComponent }      from './planning/planning.component';
-import { LoginComponent } from './login/login.component';
+import { LoginComponent }         from './login/login.component';
+import { LoginService }           from './login.service';
 
 @NgModule({
   imports: [
@@ -24,7 +25,8 @@ import { LoginComponent } from './login/login.component';
   providers: [
     ConductorService,
     DeliveryService,
-    ConflictHandlerService
+    ConflictHandlerService,
+    LoginService
   ]
 })
 export class BoardModule {}

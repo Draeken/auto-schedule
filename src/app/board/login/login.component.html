@@ -1,3 +1,4 @@
-<p>
-  login works!
-</p>
+Login or register:
+<input #email type="text" required placeholder="email" />
+<input #password type="password" required placeholder="password" />
+<button (click)="login(email.value, password.value)">Login</button>

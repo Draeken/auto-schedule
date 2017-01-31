@@ -1,12 +1,23 @@
-var express = require('express');
-var app = express();
+var config = require('./server/config');
+var mongoose = require('mongoose');
 
-app.get('/', (req, res) => {
-  var ip = req.headers['x-forwarded-for'] ||
-     req.connection.remoteAddress ||
-     req.socket.remoteAddress ||
-     req.connection.socket.remoteAddress;
-  res.send('hello world ' + ip)
+mongoose.connect(`mongodb://${config.db.ip}/${config.db.name}`);
+mongoose.Promise = global.Promise;
+
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error: '));
+db.once('open', function() {
+  console.log(`connected to DB ${config.db.ip}/${config.db.name}`);
 });
 
-app.listen(3000, () => console.log('App listening on port 3000'));
+var app = require('./server/index')({
+  test: config.test,
+});
+
+app.listen(config.express.port, config.express.ip, function (error) {
+  if (error) {
+    console.error('Unable to listen for connections', error);
+    process.exit(10);
+  }
+  console.info(`express is listening on http://${config.express.ip}:${config.express.port}`);
+})
