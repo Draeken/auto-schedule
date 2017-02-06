@@ -14,7 +14,9 @@ function checkEmail(email, oldEmail) {
   if (email === oldEmail) { return new Promise.resolve() }
   if (!email) { throw new Error(`Email cannot be empty`) };
   return User.findOne({ 'email': email }).exec()
-    .then(user => if (user) { throw new Error(`Email already used`) });
+    .then(user => {
+      if (user) { throw new Error(`Email already used`) }
+    });
 }
 
 function updatePassword(user, userUpdate) {

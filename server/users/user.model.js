@@ -7,7 +7,7 @@ var userSchema = new mongoose.Schema({
   email: { type: String, default: '' },
   pwhash: { type: Buffer, default: Buffer.alloc(0) },
   devices: { type: [deviceSchema], default: [] },
-  agents: [{ type: Schema.Types.ObjectId, ref: 'Agent' }],
+  agents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Agent' }],
 });
 
 function checkUserAndDevice(userId, deviceId) {

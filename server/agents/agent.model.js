@@ -18,4 +18,4 @@ agentSchema.statics.findByToken = function(token) {
   });
 }
 
-module.exports = mongoose.model('Agent', userSchema);
+module.exports = mongoose.model('Agent', agentSchema);
