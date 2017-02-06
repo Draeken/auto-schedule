@@ -17,6 +17,7 @@ module.exports = (options) => {
 
   app.use('/user', require('./users/router.js')());
   app.use('/agent', require('./agents/router.js')());
+  app.use('/admin', require('./admin/router.js')());
 
   app.use((req, res) => res.sendStatus(404));
 
