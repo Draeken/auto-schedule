@@ -1,5 +1,6 @@
-var User = require('./user.model');
 var jwt = require('jsonwebtoken');
+
+var User = require('./user.model');
 
 function minimizeUserAgent(ua) {
   return JSON.stringify(Object.keys(ua)

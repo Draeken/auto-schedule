@@ -1,13 +1,10 @@
 var express = require('express');
 var app = express();
 var morgan = require('morgan');
+var bodyParser = require('body-parser');
 
 app.disable('trust proxy');
 app.use(morgan('combined'));
-
-// var bodyParser = require('body-parser');
-//
-// app.use(bodyParser.json());
 
 module.exports = (options) => {
   app.use(function(req, res, next) {
@@ -16,7 +13,10 @@ module.exports = (options) => {
     next();
   });
 
+  app.post('*', bodyParser.json());
+
   app.use('/user', require('./users/router.js')());
+  app.use('/agent', require('./agents/router.js')());
 
   app.use((req, res) => res.sendStatus(404));
 
@@ -27,5 +27,6 @@ module.exports = (options) => {
     console.error(err.stack);
     res.sendStatus(500);
   });
+
   return app;
 }
