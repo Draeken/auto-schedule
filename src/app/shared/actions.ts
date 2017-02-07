@@ -8,7 +8,7 @@ export class AddActivityAction {
 export type strToAgent = (n: string) => Agent;
 
 export class ActivateServicesAction {
-  constructor(public services: Service[], public getAgent: strToAgent) {}
+  constructor(public services: Service[]) {}
 }
 
 export type action = AddActivityAction | ActivateServicesAction;
