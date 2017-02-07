@@ -23,13 +23,13 @@ export class LoginService {
     this.state
       .pluck('UserStates')
       .filter((us: UserStates) => us.loggedStatus == LoginStatus.notLogged)
-      .subscribe(this.firstLogin);
+      .subscribe(this.partialLogin);
   }
 
-  firstLogin(): void {
-    this.http.get(this.serverUrl + 'partial-login')
-             .map(this.extractData)
-             .subscribe(this.partialLoggin);
+  partialLogin(): void {
+    this.http.get(this.serverUrl + 'user/partial-login')
+             .map(this.extractToken)
+             .subscribe(this.handlePartialLogin);
   }
 
   tryToLogin(email: string, password: string): void {
@@ -40,22 +40,22 @@ export class LoginService {
     let headers = new Headers({ 'content-type': 'application/json' });
     let options = new RequestOptions({ headers: headers });
 
-    this.http.post(this.serverUrl + 'login', dataLogin, options)
-             .map(this.extractData)
-             .subscribe(this.loginSuccess);
+    this.http.post(this.serverUrl + 'user/login', dataLogin, options)
+             .map(this.extractToken)
+             .subscribe(this.handleFullLogin.bind(this, email));
   }
 
-  private extractData(res: Response) {
+  private extractToken(res: Response): string {
     let body = res.json();
-    return body || { };
+    return body ? body.token : undefined;
   }
 
-  private partialLoggin(data: any): void {
-
+  private handlePartialLogin(token: string): void {
+    console.log(token)
   }
 
-  private loginSuccess(data: any): void {
-    console.log(data);
+  private handleFullLogin(email: string, token: string): void {
+    console.log(token);
   }
 
   private loginFail(): void {}
