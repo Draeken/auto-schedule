@@ -23,24 +23,27 @@ export class LoginService {
               @Inject(state) private state: Observable<AppState>,
               private dataIo: DataIOService) {
     this.state
-      .pluck('UserStates')
+      .pluck('userStates')
       .filter((us: UserStates) => us.loggedStatus == LoginStatus.notLogged)
-      .subscribe(this.partialLogin);
+      .distinctUntilChanged()
+      .subscribe(this.partialLogin.bind(this));
   }
 
   private partialLogin(): void {
-    this.http.get(this.serverUrl + 'user/partial-login')
+    this.http.post(this.serverUrl + 'user/partial-login', '')
              .map(this.extractToken)
-             .subscribe(this.handlePartialLogin);
+             .subscribe(this.handlePartialLogin.bind(this));
   }
 
   attemptLogin(email: string, password: string): void {
     const userLocalInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
     const anoToken = userLocalInfo ? userLocalInfo.token : undefined;
     const dataLogin = {
-      email: email,
-      password: password,
-      anoToken: anoToken
+      token: anoToken,
+      userInfo: {
+        email: email,
+        password: password,
+      }
     };
     let headers = new Headers({ 'content-type': 'application/json' });
     let options = new RequestOptions({ headers: headers });
@@ -51,13 +54,19 @@ export class LoginService {
   }
 
   private extractToken(res: Response): string {
-    let body = res.json();
+    let body;
+    try {
+      body = res.json();
+    } catch(e) {
+      body = undefined;
+    }
     return body ? body.token : undefined;
   }
 
   private handlePartialLogin(token: string): void {
     if (!token) {
       console.error('No token');
+      return;
     }
     const userInfo: LocalUserInfo = {
       token: token
@@ -67,13 +76,17 @@ export class LoginService {
   }
 
   private handleFullLogin(email: string, token: string): void {
+    let userInfo;
     if (!token) {
-      console.error('No token');
+      console.error('No new token');
+      userInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
+      userInfo.email = email;
+    } else {
+      userInfo = {
+        token: token,
+        email: email
+      };
     }
-    const userInfo: LocalUserInfo = {
-      token: token,
-      email: email
-    };
     localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
     this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.fullyLogged));
   }

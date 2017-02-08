@@ -42,10 +42,16 @@ userSchema.statics.findByAgentToken = function(token) {
     });
 }
 
-userSchema.statics.findByLogin = function(email, password) {
+userSchema.statics.findByLogin = function(email, password, throwIfNotFound = true) {
   return this.findOne({ 'email': email }).exec()
     .then(user => {
-      if (!user) { throw new Error(`Users with email ${email} not found`);}
+      if (!user) {
+        if (throwIfNotFound) {
+          throw new Error(`Users with email ${email} not found`);
+        } else {
+          return;
+        }
+      }
       if (!sodium.crypto_pwhash_str_verify(user.pwhash, Buffer.from(password, 'utf8'))) {
         throw new Error(`Password mismatch for user ${email}`);
       }
@@ -55,6 +61,7 @@ userSchema.statics.findByLogin = function(email, password) {
 
 userSchema.statics.mergeUsers = function(users) {
   if (!users[0]) { throw { e: "NoNewUser", user: users[1] }; }
+  if (!users[1]) { throw { e: "NoLegacyUser", user: users[0] }; }
   let legacyUser;
   let newUser;
   if ((users[0].email.length === 0 && users[1].email.length > 0) ||

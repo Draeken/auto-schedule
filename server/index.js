@@ -8,7 +8,7 @@ app.use(morgan('combined'));
 
 module.exports = (options) => {
   app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", `${options.test.server.ip}:${options.test.server.port}`);
+    res.header("Access-Control-Allow-Origin", `${options.test.server.ip}${options.test.server.port}`);
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
   });

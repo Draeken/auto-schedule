@@ -14,7 +14,7 @@ module.exports = (options) => {
   router.post('/update-user', require('./update-user.controller')());
 
   /**
-   * body: { email: string, password: string, anoToken: old token from partial-login }
+   * body: { token: old token from partial-login, userInfo: { password: new Password, oldPassword: str, email: str } }
    * response: { token: token }
    */
   router.post('/login', useragent.express(), require('./login.controller')());
