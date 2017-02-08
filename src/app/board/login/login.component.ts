@@ -12,7 +12,7 @@ export class LoginComponent implements OnInit {
   constructor(private loginService: LoginService) { }
 
   private login(email: string, password: string): void {
-    this.loginService.tryToLogin(email, password);
+    this.loginService.attemptLogin(email, password);
   }
 
   ngOnInit() {

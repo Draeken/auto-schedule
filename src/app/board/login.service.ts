@@ -2,17 +2,19 @@ import { Injectable, Inject }                       from '@angular/core';
 import { Http, Headers, RequestOptions, Response }  from '@angular/http';
 import { Observable, Observer }                     from 'rxjs';
 
-import { AppState }           from '../shared/app-state.interface';
-import { action }             from '../shared/actions';
-import { dispatcher, state }  from '../core/state-dispatcher.provider';
-import { DataIOService }  from '../core/data-io.service';
-import { UserStates, LoginStatus } from '../shared/user-states.interface';
+import { AppState }                 from '../shared/app-state.interface';
+import { action,
+         ChangeLoginStatusAction }  from '../shared/actions';
+import { UserStates, LoginStatus }  from '../shared/user-states.interface';
+import { LocalUserInfo }            from '../shared/local-user-info.interface';
+import { dispatcher, state }        from '../core/state-dispatcher.provider';
+import { DataIOService }            from '../core/data-io.service';
 
 
 @Injectable()
 export class LoginService {
 
-  private readonly clientTokenName = "client";
+  private readonly userLocalKey = 'user';
   private clientToken: string;
   private readonly serverUrl = 'http://localhost:3000/';
 
@@ -26,16 +28,19 @@ export class LoginService {
       .subscribe(this.partialLogin);
   }
 
-  partialLogin(): void {
+  private partialLogin(): void {
     this.http.get(this.serverUrl + 'user/partial-login')
              .map(this.extractToken)
              .subscribe(this.handlePartialLogin);
   }
 
-  tryToLogin(email: string, password: string): void {
+  attemptLogin(email: string, password: string): void {
+    const userLocalInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
+    const anoToken = userLocalInfo ? userLocalInfo.token : undefined;
     const dataLogin = {
       email: email,
-      password: password
+      password: password,
+      anoToken: anoToken
     };
     let headers = new Headers({ 'content-type': 'application/json' });
     let options = new RequestOptions({ headers: headers });
@@ -51,13 +56,26 @@ export class LoginService {
   }
 
   private handlePartialLogin(token: string): void {
-    console.log(token)
+    if (!token) {
+      console.error('No token');
+    }
+    const userInfo: LocalUserInfo = {
+      token: token
+    };
+    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.partialLogged));
   }
 
   private handleFullLogin(email: string, token: string): void {
-    console.log(token);
+    if (!token) {
+      console.error('No token');
+    }
+    const userInfo: LocalUserInfo = {
+      token: token,
+      email: email
+    };
+    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.fullyLogged));
   }
-
-  private loginFail(): void {}
 
 }

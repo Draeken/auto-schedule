@@ -5,7 +5,6 @@ import { Task } from '../board/gears/task.interface';
 @Injectable()
 export class DataIOService {
   private readonly currentTasks = 'current-tasks';
-  private readonly tokenPrefix = 'token-';
 
   constructor() {}
 
@@ -16,11 +15,6 @@ export class DataIOService {
   retrieveCurrentTasks(): Task[] {
     const currTasks = this.retrieveFromLocalStorage(this.currentTasks);
     return currTasks ? currTasks : [];
-  }
-
-  retrieveToken(tokenName: string): string {
-    const token = this.retrieveFromLocalStorage(this.tokenPrefix + tokenName);
-    return token ? token : "";
   }
 
   private retrieveFromLocalStorage(key: string): any {

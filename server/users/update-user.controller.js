@@ -20,7 +20,8 @@ function checkEmail(email, oldEmail) {
 }
 
 function updatePassword(user, userUpdate) {
-  if (userUpdate.password === userUpdate.oldPassword) { return user };
+  if (userUpdate.password.length === 0 ||
+      userUpdate.password === userUpdate.oldPassword) { return user; }
   user.pwhash = sodium.crypto_pwhash_str(
     Buffer.from(userUpdated.password, 'utf8'),
     sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
@@ -31,7 +32,6 @@ function updatePassword(user, userUpdate) {
 
 function updateUser(userInfo, userUpdated) {
   let user = userInfo.user;
-  if (userUpdated.password.length === 0) { throw new Error(`Password cannot be empty`); }
   checkPassword(user.pwhash, userUpdated.oldPassword);
   return checkEmail(userUpdated.email, user.email)
     .then(() => updatePassword(user, userUpdated))
@@ -43,6 +43,6 @@ module.exports = (options) => {
     User.findByDeviceToken(req.body.token)
       .then(userInfo => updateUser(userInfo, req.body.userInfo))
       .then(() => res.sendStatus(200))
-      .catch((err) => next(err));
+      .catch(next);
   }
 }

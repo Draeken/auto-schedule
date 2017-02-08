@@ -25,6 +25,6 @@ module.exports = (options) => {
     createAgent(req.body)
       .then(agent => generateToken(agent))
       .then(token => res.json({ token: token }))
-      .catch(err => next(err));
+      .catch(next);
   }
 }

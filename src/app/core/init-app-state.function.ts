@@ -1,13 +1,19 @@
-import { UserStates, LoginStatus } from '../shared/user-states.interface';
-import { AppState }   from '../shared/app-state.interface';
+import { UserStates,
+         LoginStatus }    from '../shared/user-states.interface';
+import { AppState }       from '../shared/app-state.interface';
+import { LocalUserInfo }  from '../shared/local-user-info.interface';
 
 function getInitialUserState(): UserStates {
   let initUserState: UserStates = {
     loggedStatus: LoginStatus.notLogged
   };
-  const clientToken = localStorage.getItem('token-client');
-  if (clientToken) {
-    initUserState.loggedStatus = LoginStatus.fullyLogged;
+  const user: LocalUserInfo = JSON.parse(localStorage.getItem('user'));
+  if (user) {
+    if (user.email) {
+      initUserState.loggedStatus = LoginStatus.fullyLogged;
+    } else {
+      initUserState.loggedStatus = LoginStatus.partialLogged;
+    }
   }
   return initUserState;
 }

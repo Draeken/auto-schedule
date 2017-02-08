@@ -16,6 +16,6 @@ module.exports = (options) => {
   return (req, res, next) => {
     updateStatus(req.body.agentId, req.body.status)
       .then(agent => res.json(agent))
-      .catch((err) => next(err));
+      .catch(next);
   }
 }

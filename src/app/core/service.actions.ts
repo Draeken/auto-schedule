@@ -15,5 +15,5 @@ export function serviceHandler(initState: Service[], actions: Observable<action>
 
 
 function activateServices(state: Service[], action: ActivateServicesAction): Service[] {
-  return state.concat(action.services);
+  return [...state, ...action.services];
 }

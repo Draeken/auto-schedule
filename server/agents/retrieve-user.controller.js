@@ -12,6 +12,6 @@ module.exports = (options) => {
       }
       return values[1];
     }).then(userInfo => res.json({ userId: userInfo.user._id }))
-      .catch((err) => next(err));
+      .catch(next);
   }
 }

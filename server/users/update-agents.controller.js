@@ -54,6 +54,6 @@ module.exports = (options) => {
       .then(userInfo => updateAgents(userInfo, req.body.agentIds))
       .then(userAndAgent => generateAgentTokens(userAndAgent))
       .then(tokens => res.json({ tokens: tokens }))
-      .catch((err) => next(err));
+      .catch(next);
   }
 }
