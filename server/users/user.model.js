@@ -42,15 +42,45 @@ userSchema.statics.findByAgentToken = function(token) {
     });
 }
 
-userSchema.statics.findByLogin = function(email, password) {
-  return User.findOne({ 'email': email }).exec()
+userSchema.statics.findByLogin = function(email, password, throwIfNotFound = true) {
+  return this.findOne({ 'email': email }).exec()
     .then(user => {
-      if (!user) { throw new Error(`Users with email ${email} not found`);}
+      if (!user) {
+        if (throwIfNotFound) {
+          throw new Error(`Users with email ${email} not found`);
+        } else {
+          return;
+        }
+      }
       if (!sodium.crypto_pwhash_str_verify(user.pwhash, Buffer.from(password, 'utf8'))) {
         throw new Error(`Password mismatch for user ${email}`);
       }
       return user;
     })
+}
+
+userSchema.statics.mergeUsers = function(users) {
+  if (!users[0]) { throw { e: "NoNewUser", user: users[1] }; }
+  if (!users[1]) { throw { e: "NoLegacyUser", user: users[0] }; }
+  let legacyUser;
+  let newUser;
+  if ((users[0].email.length === 0 && users[1].email.length > 0) ||
+      users[0]._id.getTimestamp() > users[1]._id.getTimestamp()) {
+    newUser = users[0];
+    legacyUser = users[1]
+  } else {
+    newUser = users[1];
+    legacyUser = users[0];
+  }
+  let newDevice = newUser.devices[0];
+  const payload = {
+    userId: legacyUser._id,
+    deviceId: newDevice._id,
+  };
+  newDevice.token = jwt.sign(payload, require('./secret').token.client);
+  legacyUser.devices.push(newDevice);
+  return this.findById(newUser._id).remove().exec()
+    .then(() => legacyUser.save());
 }
 
 module.exports = mongoose.model('User', userSchema);

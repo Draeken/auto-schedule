@@ -2,17 +2,19 @@ import { Injectable, Inject }                       from '@angular/core';
 import { Http, Headers, RequestOptions, Response }  from '@angular/http';
 import { Observable, Observer }                     from 'rxjs';
 
-import { AppState }           from '../shared/app-state.interface';
-import { action }             from '../shared/actions';
-import { dispatcher, state }  from '../core/state-dispatcher.provider';
-import { DataIOService }  from '../core/data-io.service';
-import { UserStates, LoginStatus } from '../shared/user-states.interface';
+import { AppState }                 from '../shared/app-state.interface';
+import { action,
+         ChangeLoginStatusAction }  from '../shared/actions';
+import { UserStates, LoginStatus }  from '../shared/user-states.interface';
+import { LocalUserInfo }            from '../shared/local-user-info.interface';
+import { dispatcher, state }        from '../core/state-dispatcher.provider';
+import { DataIOService }            from '../core/data-io.service';
 
 
 @Injectable()
 export class LoginService {
 
-  private readonly clientTokenName = "client";
+  private readonly userLocalKey = 'user';
   private clientToken: string;
   private readonly serverUrl = 'http://localhost:3000/';
 
@@ -21,21 +23,27 @@ export class LoginService {
               @Inject(state) private state: Observable<AppState>,
               private dataIo: DataIOService) {
     this.state
-      .pluck('UserStates')
+      .pluck('userStates')
       .filter((us: UserStates) => us.loggedStatus == LoginStatus.notLogged)
-      .subscribe(this.partialLogin);
+      .distinctUntilChanged()
+      .subscribe(this.partialLogin.bind(this));
   }
 
-  partialLogin(): void {
-    this.http.get(this.serverUrl + 'user/partial-login')
+  private partialLogin(): void {
+    this.http.post(this.serverUrl + 'user/partial-login', '')
              .map(this.extractToken)
-             .subscribe(this.handlePartialLogin);
+             .subscribe(this.handlePartialLogin.bind(this));
   }
 
-  tryToLogin(email: string, password: string): void {
+  attemptLogin(email: string, password: string): void {
+    const userLocalInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
+    const anoToken = userLocalInfo ? userLocalInfo.token : undefined;
     const dataLogin = {
-      email: email,
-      password: password
+      token: anoToken,
+      userInfo: {
+        email: email,
+        password: password,
+      }
     };
     let headers = new Headers({ 'content-type': 'application/json' });
     let options = new RequestOptions({ headers: headers });
@@ -46,18 +54,41 @@ export class LoginService {
   }
 
   private extractToken(res: Response): string {
-    let body = res.json();
+    let body;
+    try {
+      body = res.json();
+    } catch(e) {
+      body = undefined;
+    }
     return body ? body.token : undefined;
   }
 
   private handlePartialLogin(token: string): void {
-    console.log(token)
+    if (!token) {
+      console.error('No token');
+      return;
+    }
+    const userInfo: LocalUserInfo = {
+      token: token
+    };
+    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.partialLogged));
   }
 
   private handleFullLogin(email: string, token: string): void {
-    console.log(token);
+    let userInfo;
+    if (!token) {
+      console.error('No new token');
+      userInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
+      userInfo.email = email;
+    } else {
+      userInfo = {
+        token: token,
+        email: email
+      };
+    }
+    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.fullyLogged));
   }
-
-  private loginFail(): void {}
 
 }

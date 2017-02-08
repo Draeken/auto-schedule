@@ -10,19 +10,25 @@ function checkPassword(pwhash, oldPw) {
   }
 }
 
-function checkEmail(email, oldEmail) {
+function updateEmail(user, email) {
+  const oldEmail = user.email;
   if (email === oldEmail) { return new Promise.resolve() }
   if (!email) { throw new Error(`Email cannot be empty`) };
   return User.findOne({ 'email': email }).exec()
-    .then(user => {
-      if (user) { throw new Error(`Email already used`) }
+    .then(conflictUser => {
+      if (conflictUser) { throw new Error(`Email already used`) }
+    })
+    .then(() => {
+      user.email = email;
+      return user.save();
     });
 }
 
-function updatePassword(user, userUpdate) {
-  if (userUpdate.password === userUpdate.oldPassword) { return user };
+function updatePassword(user, password, oldPassword) {
+  if (password.length === 0 ||
+      password === oldPassword) { return user; }
   user.pwhash = sodium.crypto_pwhash_str(
-    Buffer.from(userUpdated.password, 'utf8'),
+    Buffer.from(password, 'utf8'),
     sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
     sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
   );
@@ -31,10 +37,9 @@ function updatePassword(user, userUpdate) {
 
 function updateUser(userInfo, userUpdated) {
   let user = userInfo.user;
-  if (userUpdated.password.length === 0) { throw new Error(`Password cannot be empty`); }
   checkPassword(user.pwhash, userUpdated.oldPassword);
-  return checkEmail(userUpdated.email, user.email)
-    .then(() => updatePassword(user, userUpdated))
+  return updateEmail(user, userUpdated.email)
+    .then(() => updatePassword(user, userUpdated.password, userUpdated.oldPassword))
     .then(user => user.save());
 }
 
@@ -43,6 +48,6 @@ module.exports = (options) => {
     User.findByDeviceToken(req.body.token)
       .then(userInfo => updateUser(userInfo, req.body.userInfo))
       .then(() => res.sendStatus(200))
-      .catch((err) => next(err));
+      .catch(next);
   }
 }

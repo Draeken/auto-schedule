@@ -1,6 +1,7 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 
 import { serviceHandler } from './service.actions';
+import { userHandler }    from './user.actions';
 import { AppState }       from '../shared/app-state.interface';
 import { action }         from '../shared/actions';
 
@@ -9,14 +10,15 @@ import { action }         from '../shared/actions';
 export function stateFn(initState: AppState, actions: Observable<action>): Observable<AppState> {
   const combines = (s: any) => {
     let appState: AppState = {
-      userStates: null,
-      services: s
+      userStates: s[1],
+      services: s[0]
     };
     return appState;
   };
   const appStateObs: Observable<AppState> =
-    serviceHandler(initState.services, actions).
-    map(combines);
+    serviceHandler(initState.services, actions)
+      .zip(userHandler(initState.userStates, actions))
+      .map(combines);
 
   return wrapIntoBehavior(initState, appStateObs);
 }
