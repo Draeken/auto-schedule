@@ -2,38 +2,23 @@ var mongoose = require('mongoose');
 var User = require('./user.model');
 var Agent = require('../agents/agent.model');
 
-function verifyAgents(agentIds) {
-  return Agent.find({
-    '_id': { $in: agentIds }
-  }).then(docs => {
-    if (docs.length !== agentIds.length) {
-      throw new Error(`One agent id is unregistered`);
-    }
-  });
-}
-
-function updateAgents(userInfo, agentIds) {
+function updateAgents(userInfo, agentNames) {
   let user = userInfo.user;
-  let addedAgentIds = agentIds.added.map(agentId => mongoose.Types.ObjectId(agentId));
-  let removedAgentIds = agentIds.removed.map(agentId => mongoose.Types.ObjectId(agentId));
-  return verifyAgents(addedAgentIds)
-    .then(() => {
-      removedAgentIds.forEach(agentId => user.agents.pull(agentId));
-      addedAgentIds.forEach(agentId => user.agents.push(agentId));
-      return user.save();
-    })
-    .then(() => {
-      return {
-        userInfo: userInfo,
-        addedAgentIds: addedAgentIds
-      };
+  return Promose.all([
+    Agent.findByNames(agentNames.added, '_id'),
+    Agent.findByNames(agentNames.removed, '_id')])
+    .then(agentIds => {
+      agentIds[1].forEach(agentId => user.agents.pull(agentId));
+      agentIds[0].forEach(agentId => user.agents.push(agentId));
+    }).then(agentIds => {
+      return user.save().then(user => generateAgentTokens(userInfo, agentIds[0]));
     });
 }
 
-function generateAgentTokens(userAndAgent) {
-  const agentIds = userAndAgent.addedAgentIds;
-  const userId = userAndAgent.userInfo.user._id;
-  const deviceId = userAndAgent.userInfo.device._id;
+function generateAgentTokens(userInfo, addedAgentIds) {
+  const agentIds = addedAgentIds;
+  const userId = userInfo.user._id;
+  const deviceId = userInfo.device._id;
   let tokens = [];
 
   agents.forEach(agentId => {
@@ -51,8 +36,7 @@ function generateAgentTokens(userAndAgent) {
 module.exports = (options) => {
   return (req, res, next) => {
     User.findByDeviceToken(req.body.token)
-      .then(userInfo => updateAgents(userInfo, req.body.agentIds))
-      .then(userAndAgent => generateAgentTokens(userAndAgent))
+      .then(userInfo => updateAgents(userInfo, req.body.agentNames))
       .then(tokens => res.json({ tokens: tokens }))
       .catch(next);
   }

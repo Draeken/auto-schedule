@@ -18,4 +18,13 @@ agentSchema.statics.findByToken = function(token) {
   });
 }
 
+agentSchema.statics.findByNames = function(names, select) {
+  return this
+    .find({
+      name: { $in: names }
+    })
+    .select(select)
+    .exec();
+}
+
 module.exports = mongoose.model('Agent', agentSchema);

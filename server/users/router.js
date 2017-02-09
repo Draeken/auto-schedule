@@ -18,6 +18,11 @@ module.exports = (options) => {
    * response: { token: token }
    */
   router.post('/login', useragent.express(), require('./login.controller')());
+
+  /**
+   * body: { token: token, agentNames: { added: [string], removed: [string] } }
+   *
+   */
   router.post('/update-agents', require('./update-agents.controller')());
   router.get('/list-agents', require('./list-agents.controller')());
   return router;
