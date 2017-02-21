@@ -12,13 +12,6 @@ import { Service, distinctServices }      from './service';
 export class DeliveryService {
 
   /**
-   * These services are loaded automatically
-   */
-  static BASE_SERVICES = [
-    'sleep'
-  ];
-
-  /**
    * Map<ServiceName, Agent>
    */
   private agentMap = new Map<string, Agent>();
@@ -27,17 +20,18 @@ export class DeliveryService {
 
   constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
-    // DeliveryService.BASE_SERVICES.forEach(service =>
-    //   this.agentMap.set(service, this.getAgentInstance(service)));
     this.services = this.state.pluck('services').distinctUntilChanged(distinctServices);
     this.services.subscribe((services: Service[]) => {
       this.updateAgentMapping(services);
-      this.activateBaseService(services);
     });
   }
 
-  get agents(): Observable<Agent[]> {
+  get agentsFromMap(): Observable<Agent[]> {
     return this.services.map((services: Service[]) => services.map(s => this.getAgent(s.name)));
+  }
+
+  get agents(): Observable<Agent[]> {
+    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s)));
   }
 
   getAgent(agentName: string): Agent {
@@ -47,20 +41,10 @@ export class DeliveryService {
   private updateAgentMapping(services: Service[]): void {
     services.forEach(asService => {
       const sName = asService.name;
-      if (this.agentMap.has(sName) &&
-        this.agentMap.get(sName).service.url === asService.url) {
-          return;
+      if (this.agentMap.has(sName)) {
+        return;
       }
-      this.agentMap.set(sName, new AgentOnline(sName, asService.url));
+      this.agentMap.set(sName, new AgentOnline(asService));
     });
-  }
-
-  private activateBaseService(services: Service[]): void {
-    const baseServices = DeliveryService.BASE_SERVICES
-    .filter(baseService => !services.find(curService =>
-        curService.name === baseService))
-    .map(s => ({ name: s, url: 'localhost' })); // Set real url of base services
-    baseServices.forEach(s => this.agentMap.set(s.name, new AgentOnline(s.name, s.url)));
-    this.dispatcher.next(new ActivateServicesAction(baseServices));
   }
 }

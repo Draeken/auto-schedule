@@ -3,6 +3,8 @@ import { UserStates,
 import { AppState }       from '../shared/app-state.interface';
 import { LocalUserInfo }  from '../shared/local-user-info.interface';
 
+import { Service }  from '../board/gears/service';
+
 function getInitialUserState(): UserStates {
   let initUserState: UserStates = {
     loggedStatus: LoginStatus.notLogged
@@ -18,9 +20,18 @@ function getInitialUserState(): UserStates {
   return initUserState;
 }
 
+function getInitialServices(): Service[] {
+  return [
+    {
+      name: 'Custom Task',
+      url: 'localhost:3001/api'
+    },
+  ]
+}
+
 const initAppStateValue: AppState = {
   userStates: getInitialUserState(),
-  services: []
+  services: getInitialServices()
 };
 
 export function initAppState(): AppState {

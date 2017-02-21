@@ -7,17 +7,19 @@ import { Task }         from '../gears/task.interface';
 import { Occurence }    from './occurence.interface';
 
 export abstract class Agent {
-  service: Service;
-
   protected config: Subject<any>;
   protected requests: Subject<ServiceQuery[]>;
 
   private readonly lsPrefix: string;
   private readonly lsOccurenceKey = 'occurences';
 
-  constructor(name: string) {
+  constructor(private _service: Service) {
     this.config = new Subject<any>();
-    this.lsPrefix = name;
+    this.lsPrefix = _service.name;
+  }
+
+  get service() {
+    return Object.assign({}, this._service);
   }
 
   abstract getInfo(taskId: number): string

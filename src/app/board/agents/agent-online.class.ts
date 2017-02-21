@@ -1,11 +1,12 @@
 import { Agent }  from './agent.abstract';
 import { Marker } from '../gears/activities.class';
 import { Task }   from '../gears/task.interface';
+import { Service} from '../gears/service';
 
 export class AgentOnline extends Agent {
 
-  constructor(name: string, private url: string) {
-    super(name);
+  constructor(service: Service) {
+    super(service);
   }
 
   getInfo(taskId: number): string {
@@ -14,5 +15,7 @@ export class AgentOnline extends Agent {
 
   endTask(task: Task): void {}
 
-  protected checkAllocation(context: [any, Marker[]]): void {}
+  protected checkAllocation(context: [any, Marker[]]): void {
+    console.log(this.service);
+  }
 }
