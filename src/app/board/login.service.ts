@@ -4,7 +4,7 @@ import { Observable, Observer }                     from 'rxjs';
 
 import { AppState }                 from '../shared/app-state.interface';
 import { action,
-         ChangeLoginStatusAction }  from '../shared/actions';
+         UpdateLoginStatusAction }  from '../shared/actions';
 import { UserStates, LoginStatus }  from '../shared/user-states.interface';
 import { LocalUserInfo }            from '../shared/local-user-info.interface';
 import { dispatcher, state }        from '../core/state-dispatcher.provider';
@@ -72,7 +72,7 @@ export class LoginService {
       token: token
     };
     localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
-    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.partialLogged));
+    this.dispatcher.next(new UpdateLoginStatusAction(LoginStatus.partialLogged));
   }
 
   private handleFullLogin(email: string, token: string): void {
@@ -88,7 +88,7 @@ export class LoginService {
       };
     }
     localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
-    this.dispatcher.next(new ChangeLoginStatusAction(LoginStatus.fullyLogged));
+    this.dispatcher.next(new UpdateLoginStatusAction(LoginStatus.fullyLogged));
   }
 
 }

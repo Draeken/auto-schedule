@@ -1,4 +1,5 @@
 export interface ServiceQuery {
+  agentName: string;
   id: number;
   start?: number;
   end?: number;

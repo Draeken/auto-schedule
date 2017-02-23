@@ -11,40 +11,14 @@ import { Service, distinctServices }      from './service';
 @Injectable()
 export class DeliveryService {
 
-  /**
-   * Map<ServiceName, Agent>
-   */
-  private agentMap = new Map<string, Agent>();
-
   private services: Observable<{}>;
 
   constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
     this.services = this.state.pluck('services').distinctUntilChanged(distinctServices);
-    this.services.subscribe((services: Service[]) => {
-      this.updateAgentMapping(services);
-    });
-  }
-
-  get agentsFromMap(): Observable<Agent[]> {
-    return this.services.map((services: Service[]) => services.map(s => this.getAgent(s.name)));
   }
 
   get agents(): Observable<Agent[]> {
     return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s)));
-  }
-
-  getAgent(agentName: string): Agent {
-    return this.agentMap.get(agentName);
-  }
-
-  private updateAgentMapping(services: Service[]): void {
-    services.forEach(asService => {
-      const sName = asService.name;
-      if (this.agentMap.has(sName)) {
-        return;
-      }
-      this.agentMap.set(sName, new AgentOnline(asService));
-    });
   }
 }

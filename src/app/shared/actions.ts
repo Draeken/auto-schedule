@@ -1,23 +1,27 @@
-import { Agent }    from '../board/agents/agent.abstract';
 import { Service }  from '../board/gears/service';
 
 import { LoginStatus }  from './user-states.interface';
-
-export class AddActivityAction {
-  constructor(public name: string) {}
-}
-
-export type strToAgent = (n: string) => Agent;
+import { TaskStatus }   from '../board/gears/task.interface';
+import { Activities }   from '../board/gears/activities.class';
 
 export class ActivateServicesAction {
   constructor(public services: Service[]) {}
 }
 
-export class ChangeLoginStatusAction {
+export class UpdateLoginStatusAction {
   constructor(public status: LoginStatus) {}
 }
 
+export class UpdateTaskStatusAction {
+  constructor(public serviceName: string, public taskId: number, public newStatus: TaskStatus) {}
+}
+
+export class UpdateTimelineAction {
+  constructor(public timeline: Activities) {}
+}
+
 export type action =
-    AddActivityAction
-  | ActivateServicesAction
-  | ChangeLoginStatusAction;
+  ActivateServicesAction
+  | UpdateLoginStatusAction
+  | UpdateTaskStatusAction
+  | UpdateTimelineAction;

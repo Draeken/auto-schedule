@@ -5,7 +5,7 @@
     <th>      end    </th>
   </tr>
 <tr *ngFor="let task of (tasks | async)">
-  <td>{{ getTaskDescription(task) }}</td>
+  <td>Add Description</td>
   <td>{{ task.start | date:'jms' }}</td>
   <td>{{ task.end | date:'jms' }}</td>
 </tr>

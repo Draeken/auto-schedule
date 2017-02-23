@@ -5,17 +5,17 @@ export interface Service {
 
 export function distinctServices(x: Service[], y: Service[]): boolean {
   if (!x && !y) {
-    return false;
-  } else if (!x || !y) {
     return true;
+  } else if (!x || !y) {
+    return false;
   }
   if (x.length !== y.length) {
-    return true;
+    return false;
   }
   for (let i = 0; i < x.length; ++i) {
     if (x[i].name !== y[i].name || x[i].url !== x[i].url) {
-      return true;
+      return false;
     }
   }
-  return false;
+  return true;
 }

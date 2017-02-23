@@ -28,13 +28,7 @@ export class PlanningComponent implements OnInit {
   ngOnInit() {
   }
 
-  private getTaskDescription(task: Task): string {
-    return this.delivery.getAgent(task.serviceName).getInfo(task.id);
-  }
-
   private firstTasks(): Observable<Task[]> {
-    return this.conductor.schedule.map(schedule => {
-      return schedule.firstTasks;
-    });
+    return this.state.pluck('timeline');
   }
 }

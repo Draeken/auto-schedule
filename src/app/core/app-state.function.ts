@@ -1,23 +1,26 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { serviceHandler } from './service.actions';
-import { userHandler }    from './user.actions';
-import { AppState }       from '../shared/app-state.interface';
-import { action }         from '../shared/actions';
-
-/* TODO: handle ActivateServicesAction */
+import { serviceHandler }   from './service.actions';
+import { userHandler }      from './user.actions';
+import { timelineHandler }  from './timeline.actions';
+import { AppState }         from '../shared/app-state.interface';
+import { action }           from '../shared/actions';
 
 export function stateFn(initState: AppState, actions: Observable<action>): Observable<AppState> {
   const combines = (s: any) => {
     let appState: AppState = {
+      services: s[0],
       userStates: s[1],
-      services: s[0]
+      timeline: s[2],
     };
     return appState;
   };
   const appStateObs: Observable<AppState> =
     serviceHandler(initState.services, actions)
-      .zip(userHandler(initState.userStates, actions))
+      .zip(
+        userHandler(initState.userStates, actions),
+        timelineHandler(initState.timeline, actions)
+      )
       .map(combines);
 
   return wrapIntoBehavior(initState, appStateObs);

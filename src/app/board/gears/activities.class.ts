@@ -1,4 +1,4 @@
-import { Task }         from './task.interface';
+import { Task, TaskStatus }         from './task.interface';
 import { ServiceQuery } from './service-query.interface';
 
 export interface Marker {
@@ -14,19 +14,20 @@ export class Activities {
 
   static distinctMarkers(x: Marker[], y: Marker[]): boolean {
     if (x.length !== y.length) {
-      return true;
+      return false;
     }
     for (let i = 0; i < x.length; ++i) {
       if (x[i].taskId !== y[i].taskId || x[i].time !== y[i].time) {
-        return true;
+        return false;
       }
     }
-    return false;
+    return true;
   }
 
   constructor() {}
 
-  push(serviceName: string, q: ServiceQuery): void {
+  push(q: ServiceQuery): void {
+    let serviceName = q.agentName;
     if (this.isFuzzy(q)) {
       if (this.fuzzyQueries.has(serviceName)) {
         this.fuzzyQueries.get(serviceName).push(q);
@@ -40,6 +41,10 @@ export class Activities {
 
   filter(serviceName: string): Marker[] {
     return this.markers.filter(m => m.serviceName === serviceName);
+  }
+
+  toArray(): Task[] {
+    return this.firstTasks;
   }
 
   get fuzzyEntries(): Iterator<[string, ServiceQuery[]]> {
@@ -63,7 +68,8 @@ export class Activities {
         id: mStart.taskId,
         start: mStart.time,
         serviceName: mStart.serviceName,
-        end: mEnd.time
+        end: mEnd.time,
+        status: TaskStatus.Sleep,
       });
     while (markerSearch.length > 0) {
       const marker = this.markers[markerI++];

@@ -1,20 +1,32 @@
-import { Injectable } from '@angular/core';
 
-import { Task } from '../board/gears/task.interface';
+import { Injectable, Inject } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { ServiceQuery } from '../board/gears/service-query.interface';
+import { Task,
+         distinctCurrentTask,
+         extractCurrentTasks } from '../board/gears/task.interface';
+import { state } from './state-dispatcher.provider';
+import { AppState } from '../shared/app-state.interface';
 
 @Injectable()
 export class DataIOService {
-  private readonly currentTasks = 'current-tasks';
 
-  constructor() {}
-
-  saveCurrentTasks(tasks: Task[]): void {
-    this.saveToLocalStorage(this.currentTasks, tasks);
+  constructor(@Inject(state) private state: Observable<AppState>) {
+    this.state
+      .pluck('timeline')
+      .map(extractCurrentTasks)
+      .distinctUntilChanged(distinctCurrentTask)
+      .subscribe(this.saveCurrentTasks);
   }
 
-  retrieveCurrentTasks(): Task[] {
-    const currTasks = this.retrieveFromLocalStorage(this.currentTasks);
-    return currTasks ? currTasks : [];
+  private saveCurrentTasks(tasks: Task[]): void {
+    //Save to ASS
+    console.log('save to ASS:', tasks);
+  }
+
+  getCurrentTasks(): Observable<ServiceQuery[]> {
+    return Observable.of([]);
   }
 
   private retrieveFromLocalStorage(key: string): any {

@@ -4,9 +4,11 @@ import { Observable, Observer }  from 'rxjs';
 import { dispatcher, state }  from '../../core/state-dispatcher.provider';
 import { action }             from '../../shared/actions';
 import { AppState}            from '../../shared/app-state.interface';
-import { Task }               from '../gears/task.interface';
+import { Task,
+         extractCurrentTasks} from '../gears/task.interface';
 import { ConductorService }   from '../gears/conductor.service';
 import { DeliveryService }    from '../gears/delivery.service';
+import { Agent }              from '../agents/agent.abstract';
 
 @Component({
   selector: 'as-focus',
@@ -31,10 +33,12 @@ export class FocusComponent implements OnInit {
   }
 
   get tasksDescription(): Observable<string[]> {
-    return this.tasks.map(tasks => tasks.map(task => {
-      let agent = this.delivery.getAgent(task.serviceName);
-      return agent.getInfo(task.id);
-    }));
+    return Observable.combineLatest(this.delivery.agents, this.tasks, (a: Agent[], t: Task[]) => {return { agents: a, tasks: t }; })
+      .map(value => {
+        return value.tasks.map(t => {
+          return value.agents.find(a => a.service.name === t.serviceName).getInfo(t.id);
+        });
+      });
   }
 
   private computeTimelefts(): Observable<number[]> {
@@ -47,8 +51,6 @@ export class FocusComponent implements OnInit {
   }
 
   private firstTasks(): Observable<Task[]> {
-    return this.conductor.schedule.map(schedule => {
-      return schedule.firstTasks;
-    });
+    return this.state.pluck('timeline').map(extractCurrentTasks);
   }
 }

@@ -31,7 +31,8 @@ function getInitialServices(): Service[] {
 
 const initAppStateValue: AppState = {
   userStates: getInitialUserState(),
-  services: getInitialServices()
+  services: getInitialServices(),
+  timeline: [],
 };
 
 export function initAppState(): AppState {
