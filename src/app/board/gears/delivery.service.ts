@@ -19,6 +19,6 @@ export class DeliveryService {
   }
 
   get agents(): Observable<Agent[]> {
-    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s)));
+    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s, this.state.pluck('timeline'))));
   }
 }

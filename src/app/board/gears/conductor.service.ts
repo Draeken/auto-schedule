@@ -9,6 +9,7 @@ import { ServiceQuery } from './service-query.interface';
 import { Task,
          distinctCurrentTask,
          extractCurrentTasks,
+         extractNextTasks,
          TaskStatus } from './task.interface';
 import { action,
          UpdateTimelineAction,
@@ -36,10 +37,14 @@ export class ConductorService {
       .map(this.buildTimeline.bind(this))
       .subscribe((agents: Agent[]) => agents.forEach(a => a.askForRequest()));
 
-    this.state.pluck('timeline').subscribe(this.handleDoneTasks);
     this.state.pluck('timeline')
+      .switchMap(this.setTimerForNextTasks)
+      .subscribe(this.handleStartedTask);
+    this.state.pluck('timeline')
+      .map(extractCurrentTasks)
       .distinctUntilChanged(distinctCurrentTask)
-      .subscribe(this.handleDoneTasks);
+      .switchMap(this.setTimerForCurrentTasks)
+      .subscribe(this.handleTimedTask);
   }
 
   private createTimelineContext(timelineContext: TimelineContext): TimelineContext {
@@ -85,21 +90,27 @@ export class ConductorService {
     return activities;
   }
 
-  private handleDoneTasks(timeline: Task[]): void {
-    let i = timeline.findIndex(t => t.status == TaskStatus.Done);
-    let nextTask = timeline[i + 1];
-    if (!nextTask) { return; }
-    this.dispatcher.next(new UpdateTaskStatusAction(nextTask.serviceName, nextTask.id, TaskStatus.Running));
+  private setTimerForNextTasks(timeline: Task[]): Observable<Task> {
+    //Logic to handle paused/extended tasks
+    let nextTasks = extractNextTasks(timeline);
+    return Observable.merge(...nextTasks.map(task => {
+      return Observable.timer(new Date(task.start)).map(x => task)
+    }));
   }
 
-  /**
-   * How to handle pause ?
-   */
-  private handleEndOfTask(currentTasks: Task[]): void {
-    currentTasks.forEach(task => {
-      Observable.timer(new Date(task.end)).subscribe(x =>
-        new UpdateTaskStatusAction(task.serviceName, task.id, TaskStatus.Done));
-    })
+  private setTimerForCurrentTasks(currentTasks: Task[]): Observable<Task> {
+    return Observable.merge(...currentTasks.map(task => {
+      return Observable.timer(new Date(task.end)).map(x => task);
+    }))
+  }
+
+  private handleTimedTask(timedTask: Task): void {
+    //Logic to handle "do not autoterminate" flag
+    this.dispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done))
+  }
+
+  private handleStartedTask(startedTask: Task): void {
+    this.dispatcher.next(new UpdateTaskStatusAction(startedTask.serviceName, startedTask.id, TaskStatus.Running));
   }
 
 }

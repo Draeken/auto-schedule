@@ -27,6 +27,20 @@ export function extractCurrentTasks(tasks: Task[]): Task[] {
   return tasks.filter(t => notCurrentStatus.indexOf(t.status) === -1);
 }
 
+export function extractNextTasks(tasks: Task[]): Task[] {
+  let i = tasks.findIndex(t => t.status == TaskStatus.Sleep);
+  if (i === -1) { return []; }
+  let nextTasks = [tasks[i]];
+  let nextEnd = nextTasks[0].end;
+  do {
+    let nextTask = tasks[++i];
+    if (nextTask.start > nextEnd) { break; }
+    nextTasks.push(nextTask);
+    nextEnd = Math.min(nextEnd, nextTask.end);
+  } while (i < tasks.length);
+  return nextTasks;
+}
+
 export function distinctCurrentTask(ta: Task[], tb: Task[]): boolean {
   let tbFiltered = extractCurrentTasks(tb);
 

@@ -8,18 +8,17 @@ import { Service} from '../gears/service';
 
 export class AgentOnline extends Agent {
 
-  constructor(service: Service) {
-    super(service);
+  constructor(service: Service, timeline: Observable<Task[]>) {
+    super(service, timeline);
   }
 
   getInfo(taskId: number): string {
     return "test";
   }
 
-  endTask(task: Task): void {}
-
-
   setTimeline(timeline: Observable<Activities>): void {}
 
   askForRequest(): void {}
+
+  protected endTask(task: Task): void {}
 }
