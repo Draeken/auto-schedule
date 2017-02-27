@@ -16,8 +16,6 @@ export class AgentOnline extends Agent {
     return "test";
   }
 
-  setTimeline(timeline: Observable<Activities>): void {}
-
   askForRequest(): void {}
 
   protected endTask(task: Task): void {}

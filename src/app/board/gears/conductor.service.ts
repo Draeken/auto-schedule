@@ -29,18 +29,23 @@ export class ConductorService {
               private conflictHandler: ConflictHandlerService,
               @Inject(dispatcher) private dispatcher: Observer<action>,
               @Inject(state) private state: Observable<AppState>) {
-    this.delivery.agents
-      .combineLatest(this.dataIO.getCurrentTasks(), (agents, tasks) => {
-        return { agents: agents, currentTasks: tasks };
-      })
+    this.handleAgentsChange(this.delivery.agents);
+    this.handleTimelineChange(this.state.pluck('timeline'));
+  }
+
+  private handleAgentsChange(agents: Observable<Agent[]>) {
+    agents
+      .combineLatest(this.dataIO.getCurrentTasks(), (agents, tasks) => ({ agents: agents, currentTasks: tasks }))
       .map(this.createTimelineContext)
       .map(this.buildTimeline.bind(this))
       .subscribe((agents: Agent[]) => agents.forEach(a => a.askForRequest()));
+  }
 
-    this.state.pluck('timeline')
+  private handleTimelineChange(timeline: Observable<Task[]>) {
+    timeline
       .switchMap(this.setTimerForNextTasks)
       .subscribe(this.handleStartedTask);
-    this.state.pluck('timeline')
+    timeline
       .map(extractCurrentTasks)
       .distinctUntilChanged(distinctCurrentTask)
       .switchMap(this.setTimerForCurrentTasks)
@@ -64,24 +69,34 @@ export class ConductorService {
   private buildTimeline(timelineContext: TimelineContext): Agent[] {
     let queries = timelineContext.queries;
     let agents = timelineContext.agents;
+    let agentsFeedback: Observable<ServiceQuery[]> = Observable.of([]);//Filtered
     let queriesObs: Observable<ServiceQuery[]> = Observable.combineLatest(
-      queries, (x: ServiceQuery[], y: ServiceQuery[]) => {
-        return y ? x.concat(y) : x;
-      }
-    );
+      queries, (x: ServiceQuery[], y: ServiceQuery[]) =>  y ? x.concat(y) : x);
+    let filledAgentsFeedback = agentsFeedback.withLatestFrom(queriesObs, this.fillAgentsFeedback);
     let currentTasks = timelineContext.currentTasks;
-    let timelineObs: Observable<Activities> = queriesObs
-      .debounceTime(TIMELINE_DEBOUNCE_TIME)
+    let timelineObs: Observable<Activities> = queriesObs.merge(filledAgentsFeedback)
       .map(queries => queries.concat(currentTasks))
       .map(this.buildActivities)
       .map(this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler));
 
-    agents.forEach(a => a.setTimeline(timelineObs));
+    agentsFeedback = Observable.zip(
+      agents.map(a => a.feedback(timelineObs)), (x: ServiceQuery[], y: ServiceQuery[]) => x.concat(y)
+    ).filter(fb => fb.length !== 0);
     timelineObs
       .filter(t => t.hasNoConflict) //And assure there is no draft/unprovided resources
       .subscribe(t => this.dispatcher.next(new UpdateTimelineAction(t)));
 
     return agents;
+  }
+
+  private fillAgentsFeedback(feedback: ServiceQuery[], queries: ServiceQuery[]) {
+    let existingAgent: Set<string> = new Set();
+    feedback.forEach(sq => existingAgent.add(sq.agentName));
+    queries.forEach(sq => {
+      if (existingAgent.has(sq.agentName)) { return; }
+      feedback.push(sq);
+    });
+    return feedback;
   }
 
   private buildActivities(queries: ServiceQuery[]): Activities {

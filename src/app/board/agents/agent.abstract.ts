@@ -19,6 +19,28 @@ export abstract class Agent {
       .subscribe(this.endTask.bind(this));
   }
 
+  abstract getInfo(taskId: number): string
+
+  abstract askForRequest(): void
+
+  /**
+   * Should emit a new request taking into account that this task is done.
+   */
+  protected abstract endTask(task: Task): void
+
+  feedback(activities: Observable<Activities>): Observable<ServiceQuery[]> {
+    //looks for permissions and prepare context for agent processing
+    return Observable.of([]);
+  }
+
+  get service() {
+    return Object.assign({}, this._service);
+  }
+
+  setRequests(requests: Subject<ServiceQuery[]>): void {
+    this.requests = requests;
+  }
+
   private lastDoneTask(timeline: Task[]): Task {
     let i = timeline.findIndex(t => t.status === TaskStatus.Sleep);
     if (i === -1) { return undefined; }
@@ -34,21 +56,5 @@ export abstract class Agent {
     if (!ta || !tb) { return false; }
     return ta.id === tb.id;
   }
-
-  abstract setTimeline(timeline: Observable<Activities>): void
-
-  abstract getInfo(taskId: number): string
-
-  abstract askForRequest(): void
-
-  get service() {
-    return Object.assign({}, this._service);
-  }
-
-  setRequests(requests: Subject<ServiceQuery[]>): void {
-    this.requests = requests;
-  }
-
-  protected abstract endTask(task: Task): void
 
 }
