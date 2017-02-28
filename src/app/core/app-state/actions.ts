@@ -1,9 +1,9 @@
-import { Service }  from '../../board/gears/service';
+import { AgentInfo }  from '../../board/gears/service';
 
 import { LoginStatus }  from './user-states.interface';
 
 export class ActivateServicesAction {
-  constructor(public services: Service[]) {}
+  constructor(public services: AgentInfo[]) {}
 }
 
 export class UpdateLoginStatusAction {

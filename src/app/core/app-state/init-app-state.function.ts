@@ -3,7 +3,7 @@ import { UserStates,
 import { AppState }       from './app-state.interface';
 import { LocalUserInfo }  from '../../shared/local-user-info.interface';
 
-import { Service }  from '../../board/gears/service';
+import { AgentInfo }  from '../../board/gears/service';
 
 function getInitialUserState(): UserStates {
   let initUserState: UserStates = {
@@ -20,18 +20,20 @@ function getInitialUserState(): UserStates {
   return initUserState;
 }
 
-function getInitialServices(): Service[] {
+function getInitialServices(): AgentInfo[] {
   return [
     {
       name: 'Custom Task',
-      url: 'localhost:3001/api'
+      url: 'localhost:3001/api',
+      agentPermission: ['energy'],
+      userPermission: ['energy']
     },
   ]
 }
 
 const initAppStateValue: AppState = {
   userStates: getInitialUserState(),
-  services: getInitialServices()
+  agents: getInitialServices()
 };
 
 export function initAppState(): AppState {

@@ -2,7 +2,7 @@ import { Observable, Subject } from 'rxjs';
 
 import { Marker,
          Activities }   from '../gears/activities.class';
-import { Service }      from '../gears/service';
+import { AgentInfo }      from '../gears/service';
 import { ServiceQuery } from '../gears/service-query.interface';
 import { Task,
          TaskStatus }         from '../gears/task.interface';
@@ -11,7 +11,7 @@ import { Occurence }    from './occurence.interface';
 export abstract class Agent {
   protected requests: Subject<ServiceQuery[]>;
 
-  constructor(private _service: Service, timeline: Observable<Task[]>) {
+  constructor(private _service: AgentInfo, timeline: Observable<Task[]>) {
     timeline
       .map(timeline => timeline.filter(task => task.serviceName === _service.name))
       .map(this.lastDoneTask)

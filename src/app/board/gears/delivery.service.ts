@@ -7,7 +7,7 @@ import { timelineState }              from '../../core/timeline-state/state-disp
 import { TimelineState}            from '../../core/timeline-state/timeline-state.interface';
 import { Agent }                          from '../agents/agent.abstract';
 import { AgentOnline }                    from '../agents/agent-online.class';
-import { Service, distinctServices }      from './service';
+import { AgentInfo, distinctAgents }      from './service';
 
 @Injectable()
 export class DeliveryService {
@@ -17,10 +17,10 @@ export class DeliveryService {
   constructor(@Inject(appState) private appState: Observable<AppState>,
               @Inject(timelineState) private tlState: Observable<TimelineState>
 ) {
-    this.services = this.appState.pluck('services').distinctUntilChanged(distinctServices);
+    this.services = this.appState.pluck('agents').distinctUntilChanged(distinctAgents);
   }
 
   get agents(): Observable<Agent[]> {
-    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s, this.tlState.pluck('timeline'))));
+    return this.services.map((services: AgentInfo[]) => services.map(s => new AgentOnline(s, this.tlState.pluck('timeline'))));
   }
 }

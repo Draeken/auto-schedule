@@ -8,13 +8,13 @@ import { AppAction }           from './actions';
 export function stateFn(initState: AppState, actions: Observable<AppAction>): Observable<AppState> {
   const combines = (s: any) => {
     let appState: AppState = {
-      services: s[0],
+      agents: s[0],
       userStates: s[1]
     };
     return appState;
   };
   const appStateObs: Observable<AppState> =
-    serviceHandler(initState.services, actions)
+    serviceHandler(initState.agents, actions)
       .zip(
         userHandler(initState.userStates, actions)
       )

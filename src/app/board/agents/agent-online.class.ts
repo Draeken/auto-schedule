@@ -4,11 +4,11 @@ import { Agent }  from './agent.abstract';
 import { Marker,
          Activities } from '../gears/activities.class';
 import { Task }   from '../gears/task.interface';
-import { Service} from '../gears/service';
+import { AgentInfo} from '../gears/service';
 
 export class AgentOnline extends Agent {
 
-  constructor(service: Service, timeline: Observable<Task[]>) {
+  constructor(service: AgentInfo, timeline: Observable<Task[]>) {
     super(service, timeline);
   }
 

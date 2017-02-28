@@ -1,9 +1,13 @@
-export interface Service {
+export interface AgentInfo {
   name: string;
   url: string;
+  agentPermission: string[];
+  userPermission: string[];
 }
 
-export function distinctServices(x: Service[], y: Service[]): boolean {
+type Comparator = (a: any, b: any) => boolean;
+
+function areArrayEquals(x: any[], y: any[], comparator: Comparator = (a, b) => a === b): boolean {
   if (!x && !y) {
     return true;
   } else if (!x || !y) {
@@ -13,9 +17,17 @@ export function distinctServices(x: Service[], y: Service[]): boolean {
     return false;
   }
   for (let i = 0; i < x.length; ++i) {
-    if (x[i].name !== y[i].name || x[i].url !== x[i].url) {
+    if (!comparator(x[i], y[i])) {
       return false;
     }
   }
   return true;
+}
+
+export function distinctAgents(x: AgentInfo[], y: AgentInfo[]): boolean {
+  return areArrayEquals(x, y, (a: AgentInfo, b: AgentInfo) => {
+    return a.name === b.name && a.url === b.url &&
+      areArrayEquals(a.agentPermission, b.agentPermission) &&
+      areArrayEquals(a.userPermission, b.userPermission);
+  });
 }
