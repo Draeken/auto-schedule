@@ -2,12 +2,12 @@ import { Injectable, Inject }                       from '@angular/core';
 import { Http, Headers, RequestOptions, Response }  from '@angular/http';
 import { Observable, Observer }                     from 'rxjs';
 
-import { AppState }                 from '../shared/app-state.interface';
-import { action,
-         UpdateLoginStatusAction }  from '../shared/actions';
-import { UserStates, LoginStatus }  from '../shared/user-states.interface';
+import { AppState }                 from '../core/app-state/app-state.interface';
+import { AppAction,
+         UpdateLoginStatusAction }  from '../core/app-state/actions';
+import { UserStates, LoginStatus }  from '../core/app-state/user-states.interface';
 import { LocalUserInfo }            from '../shared/local-user-info.interface';
-import { dispatcher, state }        from '../core/state-dispatcher.provider';
+import { appDispatcher, appState }        from '../core/app-state/state-dispatcher.provider';
 import { DataIOService }            from '../core/data-io.service';
 
 
@@ -19,8 +19,8 @@ export class LoginService {
   private readonly serverUrl = 'http://localhost:3000/';
 
   constructor(private http: Http,
-              @Inject(dispatcher) private dispatcher: Observer<action>,
-              @Inject(state) private state: Observable<AppState>,
+              @Inject(appDispatcher) private dispatcher: Observer<AppAction>,
+              @Inject(appState) private state: Observable<AppState>,
               private dataIo: DataIOService) {
     this.state
       .pluck('userStates')

@@ -11,11 +11,11 @@ import { Task,
          extractCurrentTasks,
          extractNextTasks,
          TaskStatus } from './task.interface';
-import { action,
+import { TimelineAction,
          UpdateTimelineAction,
-         UpdateTaskStatusAction } from '../../shared/actions';
-import { AppState } from '../../shared/app-state.interface';
-import { dispatcher, state } from '../../core/state-dispatcher.provider';
+         UpdateTaskStatusAction } from '../../core/timeline-state/actions';
+import { TimelineState } from '../../core/timeline-state/timeline-state.interface';
+import { timelineDispatcher, timelineState } from '../../core/timeline-state/state-dispatcher.provider';
 import { Agent }  from '../agents/agent.abstract';
 
 type AgentsQueries = BehaviorSubject<ServiceQuery[]>[];
@@ -27,10 +27,10 @@ export class ConductorService {
   constructor(private dataIO: DataIOService,
               private delivery: DeliveryService,
               private conflictHandler: ConflictHandlerService,
-              @Inject(dispatcher) private dispatcher: Observer<action>,
-              @Inject(state) private state: Observable<AppState>) {
+              @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
+              @Inject(timelineState) private tlState: Observable<TimelineState>) {
     this.handleAgentsChange(this.delivery.agents);
-    this.handleTimelineChange(this.state.pluck('timeline'));
+    this.handleTimelineChange(this.tlState.pluck('timeline'));
   }
 
   private handleAgentsChange(agents: Observable<Agent[]>) {
@@ -84,7 +84,7 @@ export class ConductorService {
     ).filter(fb => fb.length !== 0);
     timelineObs
       .filter(t => t.hasNoConflict) //And assure there is no draft/unprovided resources
-      .subscribe(t => this.dispatcher.next(new UpdateTimelineAction(t)));
+      .subscribe(t => this.tlDispatcher.next(new UpdateTimelineAction(t)));
 
     return agents;
   }
@@ -121,11 +121,11 @@ export class ConductorService {
 
   private handleTimedTask(timedTask: Task): void {
     //Logic to handle "do not autoterminate" flag
-    this.dispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done))
+    this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done))
   }
 
   private handleStartedTask(startedTask: Task): void {
-    this.dispatcher.next(new UpdateTaskStatusAction(startedTask.serviceName, startedTask.id, TaskStatus.Running));
+    this.tlDispatcher.next(new UpdateTaskStatusAction(startedTask.serviceName, startedTask.id, TaskStatus.Running));
   }
 
 }

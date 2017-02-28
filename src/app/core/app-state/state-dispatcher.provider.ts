@@ -3,29 +3,29 @@ import { Subject, Observable }  from 'rxjs';
 
 import { initAppState } from './init-app-state.function';
 import { stateFn }      from './app-state.function';
-import { action }       from '../shared/actions';
-import { AppState }     from '../shared/app-state.interface';
+import { AppAction }       from './actions';
+import { AppState }     from './app-state.interface';
 
 export const initState = new OpaqueToken('init.state');
-export const dispatcher = new OpaqueToken('dispatcher');
-export const state = new OpaqueToken('state');
+export const appDispatcher = new OpaqueToken('dispatcher');
+export const appState = new OpaqueToken('state');
 
 export function dispatcherSubject() {
-  return new Subject<action>();
+  return new Subject<AppAction>();
 }
 
-export const stateAndDispatcherProvider = [
+export const appStateAndDispatcherProvider = [
   {
     provide: initState,
     useFactory: initAppState
   },
   {
-    provide: dispatcher,
+    provide: appDispatcher,
     useFactory: dispatcherSubject
   },
   {
-    provide: state,
+    provide: appState,
     useFactory: stateFn,
-    deps: [initState, dispatcher]
+    deps: [initState, appDispatcher]
   }
 ];

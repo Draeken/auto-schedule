@@ -1,9 +1,10 @@
 import { Injectable, Inject }   from '@angular/core';
 import { Observable, Observer } from 'rxjs';
 
-import { action, ActivateServicesAction } from '../../shared/actions';
-import { AppState }                       from '../../shared/app-state.interface';
-import { dispatcher, state }              from '../../core/state-dispatcher.provider';
+import { AppState}            from '../../core/app-state/app-state.interface';
+import { appState }              from '../../core/app-state/state-dispatcher.provider';
+import { timelineState }              from '../../core/timeline-state/state-dispatcher.provider';
+import { TimelineState}            from '../../core/timeline-state/timeline-state.interface';
 import { Agent }                          from '../agents/agent.abstract';
 import { AgentOnline }                    from '../agents/agent-online.class';
 import { Service, distinctServices }      from './service';
@@ -13,12 +14,13 @@ export class DeliveryService {
 
   private services: Observable<{}>;
 
-  constructor(@Inject(dispatcher) private dispatcher: Observer<action>,
-              @Inject(state) private state: Observable<AppState>) {
-    this.services = this.state.pluck('services').distinctUntilChanged(distinctServices);
+  constructor(@Inject(appState) private appState: Observable<AppState>,
+              @Inject(timelineState) private tlState: Observable<TimelineState>
+) {
+    this.services = this.appState.pluck('services').distinctUntilChanged(distinctServices);
   }
 
   get agents(): Observable<Agent[]> {
-    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s, this.state.pluck('timeline'))));
+    return this.services.map((services: Service[]) => services.map(s => new AgentOnline(s, this.tlState.pluck('timeline'))));
   }
 }

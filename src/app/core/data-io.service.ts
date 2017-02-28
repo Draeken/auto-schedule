@@ -6,14 +6,14 @@ import { ServiceQuery } from '../board/gears/service-query.interface';
 import { Task,
          distinctCurrentTask,
          extractCurrentTasks } from '../board/gears/task.interface';
-import { state } from './state-dispatcher.provider';
-import { AppState } from '../shared/app-state.interface';
+import { timelineState } from './timeline-state/state-dispatcher.provider';
+import { TimelineState } from '../core/timeline-state/timeline-state.interface';
 
 @Injectable()
 export class DataIOService {
 
-  constructor(@Inject(state) private state: Observable<AppState>) {
-    this.state
+  constructor(@Inject(timelineState) private tlState: Observable<TimelineState>) {
+    this.tlState
       .pluck('timeline')
       .map(extractCurrentTasks)
       .distinctUntilChanged(distinctCurrentTask)

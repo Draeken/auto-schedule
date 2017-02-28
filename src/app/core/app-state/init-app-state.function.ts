@@ -1,9 +1,9 @@
 import { UserStates,
-         LoginStatus }    from '../shared/user-states.interface';
-import { AppState }       from '../shared/app-state.interface';
-import { LocalUserInfo }  from '../shared/local-user-info.interface';
+         LoginStatus }    from './user-states.interface';
+import { AppState }       from './app-state.interface';
+import { LocalUserInfo }  from '../../shared/local-user-info.interface';
 
-import { Service }  from '../board/gears/service';
+import { Service }  from '../../board/gears/service';
 
 function getInitialUserState(): UserStates {
   let initUserState: UserStates = {
@@ -31,8 +31,7 @@ function getInitialServices(): Service[] {
 
 const initAppStateValue: AppState = {
   userStates: getInitialUserState(),
-  services: getInitialServices(),
-  timeline: [],
+  services: getInitialServices()
 };
 
 export function initAppState(): AppState {
