@@ -1,12 +1,11 @@
-import { TaskStatus }   from '../../board/gears/task.interface';
-import { Activities }   from '../../board/gears/activities.class';
+import { TaskStatus, Task }   from '../../board/gears/task.interface';
 
 export class UpdateTaskStatusAction {
   constructor(public serviceName: string, public taskId: number, public newStatus: TaskStatus) {}
 }
 
 export class UpdateTimelineAction {
-  constructor(public timeline: Activities) {}
+  constructor(public timeline: Task[]) {}
 }
 
 export type TimelineAction =

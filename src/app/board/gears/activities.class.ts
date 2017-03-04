@@ -1,4 +1,4 @@
-import { Task, TaskStatus }         from './task.interface';
+import { Task, TaskStatus, TaskTransform }         from './task.interface';
 import { ServiceQuery } from './service-query.interface';
 
 export interface Marker {
@@ -52,6 +52,7 @@ export class Activities {
   }
 
   get hasNoConflict(): boolean {
+    //Should shake that their is no "draft" tasks
     return !this.hasConflict;
   }
 
@@ -70,6 +71,7 @@ export class Activities {
         serviceName: mStart.serviceName,
         end: mEnd.time,
         status: TaskStatus.Sleep,
+        transform: { needs: [], updates: [], inserts: [] },
       });
     while (markerSearch.length > 0) {
       const marker = this.markers[markerI++];

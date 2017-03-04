@@ -6,6 +6,7 @@ import { BoardComponent }         from './board.component';
 import { ConductorService }       from './gears/conductor.service';
 import { DeliveryService }        from './gears/delivery.service';
 import { ConflictHandlerService } from './gears/conflict-handler.service';
+import { ResourceMapperService }  from './gears/resource-mapper.service';
 import { FocusComponent }         from './focus/focus.component';
 import { PlanningComponent }      from './planning/planning.component';
 import { LoginComponent }         from './login/login.component';
@@ -26,7 +27,8 @@ import { LoginService }           from './login.service';
     ConductorService,
     DeliveryService,
     ConflictHandlerService,
-    LoginService
+    LoginService,
+    ResourceMapperService
   ]
 })
 export class BoardModule {}

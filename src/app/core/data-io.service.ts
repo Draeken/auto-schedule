@@ -11,6 +11,7 @@ import { TimelineState } from '../core/timeline-state/timeline-state.interface';
 
 @Injectable()
 export class DataIOService {
+  private loki: loki;
 
   constructor(@Inject(timelineState) private tlState: Observable<TimelineState>) {
     this.tlState
@@ -18,15 +19,26 @@ export class DataIOService {
       .map(extractCurrentTasks)
       .distinctUntilChanged(distinctCurrentTask)
       .subscribe(this.saveCurrentTasks);
+
+    this.loki = new loki('resources.db', {
+      verbose: true,
+      autosave: false,
+      autoload: true,
+      throttledSaves: false,
+    });
+  }
+
+  getCurrentTasks(): Observable<ServiceQuery[]> {
+    return Observable.of([]);
+  }
+
+  getCollection(name: string): loki.Collection {
+    return this.loki.getCollection(name);
   }
 
   private saveCurrentTasks(tasks: Task[]): void {
     //Save to ASS
     console.log('save to ASS:', tasks);
-  }
-
-  getCurrentTasks(): Observable<ServiceQuery[]> {
-    return Observable.of([]);
   }
 
   private retrieveFromLocalStorage(key: string): any {

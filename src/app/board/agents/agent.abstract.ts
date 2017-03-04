@@ -28,7 +28,7 @@ export abstract class Agent {
    */
   protected abstract endTask(task: Task): void
 
-  feedback(activities: Observable<Activities>): Observable<ServiceQuery[]> {
+  feedback(): Observable<ServiceQuery[]> {
     //looks for permissions and prepare context for agent processing
     return Observable.of([]);
   }

@@ -6,12 +6,36 @@ export enum TaskStatus {
   Sleep
 }
 
+export interface TaskTransformNeed {
+  collectionName: string,
+  ref: string, //Unique ID
+  find: Object,
+  quantity: number,
+}
+
+export interface TaskTransformUpdate {
+  ref: string,
+  update: Object
+}
+
+export interface TaskTransformInsert {
+  collectionName: string,
+  doc: Object,
+}
+
+export interface TaskTransform {
+  needs: TaskTransformNeed[],
+  updates: TaskTransformUpdate[],
+  inserts: TaskTransformInsert[]
+}
+
 export interface Task {
   start: number;
   end: number;
   id: number;
   serviceName: string;
   status: TaskStatus;
+  transform: TaskTransform
 };
 
 function compareTask(ta: Task, tb: Task): boolean {
