@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, BehaviorSubject } from 'rxjs';
 
 import { Marker,
          Activities }   from '../gears/activities.class';
@@ -9,6 +9,7 @@ import { Task,
 
 export abstract class Agent {
   protected requests: Subject<ServiceQuery[]>;
+  protected feedbackObs: BehaviorSubject<ServiceQuery[]> = new BehaviorSubject([]);
 
   constructor(private _service: AgentInfo, timeline: Observable<Task[]>) {
     timeline
@@ -27,9 +28,10 @@ export abstract class Agent {
    */
   protected abstract endTask(task: Task): void
 
-  feedback(): Observable<ServiceQuery[]> {
-    //looks for permissions and prepare context for agent processing
-    return Observable.of([]);
+  protected abstract requestFeedback(timeline: Marker[]): void;
+
+  get feedbackResult(): Observable<ServiceQuery[]> {
+    return this.feedbackObs;
   }
 
   get service() {
@@ -38,6 +40,10 @@ export abstract class Agent {
 
   setRequests(requests: Subject<ServiceQuery[]>): void {
     this.requests = requests;
+  }
+
+  feedback(timeline: Activities): void {
+    this.requestFeedback(timeline.filter(this._service.name));
   }
 
   private lastDoneTask(timeline: Task[]): Task {

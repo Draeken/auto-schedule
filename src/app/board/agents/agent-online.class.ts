@@ -19,4 +19,8 @@ export class AgentOnline extends Agent {
   askForRequest(): void {}
 
   protected endTask(task: Task): void {}
+
+  protected requestFeedback(timeline: Marker[]): void {
+    console.log(this.service.name, timeline);
+  }
 }

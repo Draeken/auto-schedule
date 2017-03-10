@@ -36,7 +36,7 @@ export class ResourceMapperService {
 
     tasks.forEach(task => {
       let resources: Resource[];
-      task.transform.needs.forEach(this.handleNeeds.bind(this, resources));
+      task.transform.needs.forEach(this.handleNeeds.bind(this, resources, agents));
       task.transform.updates.forEach(this.handleUpdates.bind(this, resources));
       task.transform.inserts.forEach(this.handleInserts);
 
@@ -49,13 +49,17 @@ export class ResourceMapperService {
     return [tasks, valid];
   }
 
-  private handleNeeds(resources: Resource[], need: TaskTransformNeed) {
+  private handleNeeds(resources: Resource[], agents: Agent[], need: TaskTransformNeed) {
     let col = this.dataIo.getCollection(need.collectionName);
     if (!col) {
-
+      console.error(`Collection ${need.collectionName} doesn't exist.`);
+      //Call all agents with corresponding blabla
+      return;
     }
     let objs = col.find(need.find);
-    if (objs.length < need.quantity) { return false; }
+    if (objs.length < need.quantity) {
+      //Push agent request and send all in one time with delivery method. Agents will respond with feedback obs.
+    }
     resources.push({ objects: objs.slice(0, need.quantity), ref: need.ref, collectionName: need.collectionName });
   }
 

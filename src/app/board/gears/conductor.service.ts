@@ -71,7 +71,7 @@ export class ConductorService {
     let queries = timelineContext.queries;
     let agents = timelineContext.agents;
     let agentsFeedback = Observable.zip(
-      agents.map(a => a.feedback()), (x: ServiceQuery[], y: ServiceQuery[]) => x.concat(y)
+      agents.map(a => a.feedbackResult), (x: ServiceQuery[], y: ServiceQuery[]) => x.concat(y)
     ).filter(fb => fb.length !== 0);
     let queriesObs: Observable<ServiceQuery[]> = Observable.combineLatest(
       queries, (x: ServiceQuery[], y: ServiceQuery[]) =>  y ? x.concat(y) : x);
@@ -80,7 +80,8 @@ export class ConductorService {
     let timelineObs: Observable<Activities> = queriesObs.merge(filledAgentsFeedback)
       .map(queries => queries.concat(currentTasks))
       .map(this.buildActivities)
-      .map(this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler));
+      .map(this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler))
+      .do((t: Activities) => agents.forEach(a => a.feedback(t)));
     this.resourceMapper.updateTimeline(timelineObs
         .filter(t => t.hasNoConflict)
         .map(t => t.toArray())
@@ -121,7 +122,8 @@ export class ConductorService {
 
   private handleTimedTask(timedTask: Task): void {
     //Logic to handle "do not autoterminate" flag
-    this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done))
+    //Inform agents with corresponding permission about update.
+    this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done));
   }
 
   private handleStartedTask(startedTask: Task): void {
