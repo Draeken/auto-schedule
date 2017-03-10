@@ -3,6 +3,8 @@ import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { Marker,
          Activities }   from '../gears/activities.class';
 import { AgentInfo }      from './agent-info.interface';
+import { Permissions,
+         Permission }  from './permissions.class';
 import { ServiceQuery } from '../gears/service-query.interface';
 import { Task,
          TaskStatus }         from '../gears/task.interface';
@@ -34,7 +36,7 @@ export abstract class Agent {
     return this.feedbackObs;
   }
 
-  get service() {
+  get service(): AgentInfo {
     return Object.assign({}, this._service);
   }
 
@@ -44,6 +46,11 @@ export abstract class Agent {
 
   feedback(timeline: Activities): void {
     this.requestFeedback(timeline.filter(this._service.name));
+  }
+
+  canProvide(collectionName: string): boolean {
+    let colPerm = this._service.userPermission.collectionsPerm.find(c => c.collectionName === collectionName);
+    return Permissions.getPermissions(colPerm.permission).has(Permission.Provide);
   }
 
   private lastDoneTask(timeline: Task[]): Task {

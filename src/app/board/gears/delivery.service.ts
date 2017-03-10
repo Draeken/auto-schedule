@@ -7,7 +7,7 @@ import { timelineState }              from '../../core/timeline-state/state-disp
 import { TimelineState}            from '../../core/timeline-state/timeline-state.interface';
 import { Agent }                          from '../agents/agent.abstract';
 import { AgentOnline }                    from '../agents/agent-online.class';
-import { AgentInfo, distinctAgents }      from '../agents/agent-info.interface';
+import { AgentInfo }      from '../agents/agent-info.interface';
 
 @Injectable()
 export class DeliveryService {

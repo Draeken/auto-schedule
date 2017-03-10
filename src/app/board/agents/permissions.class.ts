@@ -4,13 +4,13 @@ interface ColPermission {
 }
 
 interface DocPermission extends ColPermission {
-  documentName: string;
+  documentsDesc: Object;
 }
 
 export enum Permission {
-  View = 1,
+  Context = 1,
   Provide = 2,
-  Update = 4
+  Watch = 4
 }
 
 export class Permissions {
@@ -22,7 +22,7 @@ export class Permissions {
   }
 
   static getPermissions(perm: number): Set<Permission> {
-    const allPerm = [Permission.Update, Permission.Provide, Permission.View];
+    const allPerm = [Permission.Watch, Permission.Provide, Permission.Context];
     const myPerm = [];
     allPerm.forEach(p => {
       if (p > perm) { return; }
@@ -30,6 +30,24 @@ export class Permissions {
       myPerm.push(p);
     });
     return new Set(myPerm);
+  }
+
+  get collectionsPerm(): ColPermission[] {
+    return this._collectionsPerm;
+  }
+
+  getCollectionsWith(perm: Permission): string[] {
+    return this.filterToPerm(this._collectionsPerm, perm)
+      .map(cp => cp.collectionName);
+  }
+
+  getDocumentsWith(perm: Permission): DocPermission[] {
+    return <DocPermission[]>this.filterToPerm(this._documentsPerm, perm);
+  }
+
+  private filterToPerm(col: ColPermission[], perm: Permission) {
+    return col
+      .filter(cp => Permissions.getPermissions(cp.permission).has(perm));
   }
 
   private static isValidPermission(perm: number) {
@@ -46,16 +64,15 @@ export class Permissions {
           permission: val
         });
       }
-      if (typeof val === 'object') {
-        Object.keys(val).forEach(docName => {
-          const val = perm[docName];
-          if (Permissions.isValidPermission(val)) {
-            return this._documentsPerm.push({
-              documentName: docName,
-              collectionName: colName,
-              permission: val,
-            });
-          }
+      if (Array.isArray(val)) {
+        val.forEach(doc => {
+          const perm = doc.permission;
+          if (!Permissions.isValidPermission(perm)) { return; }
+          this._documentsPerm.push({
+            documentsDesc: doc.documentsDesc,
+            collectionName: colName,
+            permission: perm,
+          });
         })
       }
     })
