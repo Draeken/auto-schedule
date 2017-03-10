@@ -25,8 +25,8 @@ function getInitialServices(): AgentInfo[] {
     {
       name: 'Custom Task',
       url: 'localhost:3001/api',
-      agentPermission: ['energy'],
-      userPermission: ['energy']
+      agentPermission: null,
+      userPermission: null
     },
   ]
 }

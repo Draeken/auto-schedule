@@ -1,8 +1,10 @@
+import { Permissions } from './permission.class';
+
 export interface AgentInfo {
   name: string;
   url: string;
-  agentPermission: string[];
-  userPermission: string[];
+  agentPermission: Permissions;
+  userPermission: Permissions;
 }
 
 type Comparator = (a: any, b: any) => boolean;
