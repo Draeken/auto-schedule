@@ -1,6 +1,6 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { serviceHandler }   from './service.actions';
+import { agentHandler }   from './service.actions';
 import { userHandler }      from './user.actions';
 import { AppState }         from './app-state.interface';
 import { AppAction }           from './actions';
@@ -14,7 +14,7 @@ export function stateFn(initState: AppState, actions: Observable<AppAction>): Ob
     return appState;
   };
   const appStateObs: Observable<AppState> =
-    serviceHandler(initState.agents, actions)
+    agentHandler(initState.agents, actions)
       .zip(
         userHandler(initState.userStates, actions)
       )

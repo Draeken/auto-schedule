@@ -2,11 +2,10 @@ import { Observable, Subject } from 'rxjs';
 
 import { Marker,
          Activities }   from '../gears/activities.class';
-import { AgentInfo }      from '../gears/service';
+import { AgentInfo }      from './agent-info.interface';
 import { ServiceQuery } from '../gears/service-query.interface';
 import { Task,
          TaskStatus }         from '../gears/task.interface';
-import { Occurence }    from './occurence.interface';
 
 export abstract class Agent {
   protected requests: Subject<ServiceQuery[]>;

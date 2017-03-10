@@ -4,7 +4,7 @@ import { Agent }  from './agent.abstract';
 import { Marker,
          Activities } from '../gears/activities.class';
 import { Task }   from '../gears/task.interface';
-import { AgentInfo} from '../gears/service';
+import { AgentInfo} from './agent-info.interface';
 
 export class AgentOnline extends Agent {
 

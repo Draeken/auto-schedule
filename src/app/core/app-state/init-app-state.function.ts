@@ -3,7 +3,7 @@ import { UserStates,
 import { AppState }       from './app-state.interface';
 import { LocalUserInfo }  from '../../shared/local-user-info.interface';
 
-import { AgentInfo }  from '../../board/gears/service';
+import { AgentInfo }  from '../../board/agents/agent-info.interface';
 
 function getInitialUserState(): UserStates {
   let initUserState: UserStates = {

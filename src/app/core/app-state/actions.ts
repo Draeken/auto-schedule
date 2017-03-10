@@ -1,8 +1,8 @@
-import { AgentInfo }  from '../../board/gears/service';
+import { AgentInfo }  from '../../board/agents/agent-info.interface';
 
 import { LoginStatus }  from './user-states.interface';
 
-export class ActivateServicesAction {
+export class ActivateAgentsAction {
   constructor(public services: AgentInfo[]) {}
 }
 
@@ -11,5 +11,5 @@ export class UpdateLoginStatusAction {
 }
 
 export type AppAction =
-  ActivateServicesAction
+  ActivateAgentsAction
   | UpdateLoginStatusAction;
