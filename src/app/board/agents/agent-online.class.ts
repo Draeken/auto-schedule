@@ -8,8 +8,8 @@ import { AgentInfo} from './agent-info.interface';
 
 export class AgentOnline extends Agent {
 
-  constructor(service: AgentInfo, timeline: Observable<Task[]>) {
-    super(service, timeline);
+  constructor(service: AgentInfo) {
+    super(service);
   }
 
   getInfo(taskId: number): string {
@@ -17,6 +17,8 @@ export class AgentOnline extends Agent {
   }
 
   askForRequest(): void {}
+
+  notifyStateChange(payload: Object): void {}
 
   protected endTask(task: Task): void {}
 

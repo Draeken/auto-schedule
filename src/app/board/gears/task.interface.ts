@@ -1,3 +1,5 @@
+import { AgentQuery } from './agent-query.interface';
+
 export enum TaskStatus {
   Running,
   Done,
@@ -6,72 +8,59 @@ export enum TaskStatus {
   Sleep
 }
 
-export interface TaskTransformNeed {
-  collectionName: string,
-  ref: string, //Unique ID
-  find: Object,
-  quantity: number,
-}
-
-export interface TaskTransformUpdate {
-  ref: string,
-  update: Object
-}
-
-export interface TaskTransformInsert {
-  collectionName: string,
-  doc: Object,
-}
-
-export interface TaskTransform {
-  needs: TaskTransformNeed[],
-  updates: TaskTransformUpdate[],
-  inserts: TaskTransformInsert[]
-}
-
 export interface Task {
   start: number;
   end: number;
-  id: number;
-  serviceName: string;
   status: TaskStatus;
-  transform: TaskTransform
+  query: AgentQuery;
 };
 
-function compareTask(ta: Task, tb: Task): boolean {
-  return ta.start === tb.start &&
-    ta.end === tb.end &&
-    ta.id === tb.id &&
-    ta.serviceName === tb.serviceName &&
-    ta.status === tb.status;
-}
+export class TaskHelper {
 
-export function extractCurrentTasks(tasks: Task[]): Task[] {
-  const notCurrentStatus = [TaskStatus.Sleep, TaskStatus.Done];
-  return tasks.filter(t => notCurrentStatus.indexOf(t.status) === -1);
-}
+  static extractLastDone(tasks: Task[]): Task {
+    for (let i = tasks.length -1; i >= 0; ++i) {
+      if (tasks[i].status === TaskStatus.Done) { return tasks[i] }
+    }
+  }
 
-export function extractNextTasks(tasks: Task[]): Task[] {
-  let i = tasks.findIndex(t => t.status == TaskStatus.Sleep);
-  if (i === -1) { return []; }
-  let nextTasks = [tasks[i]];
-  let nextEnd = nextTasks[0].end;
-  do {
-    let nextTask = tasks[++i];
-    if (nextTask.start > nextEnd) { break; }
-    nextTasks.push(nextTask);
-    nextEnd = Math.min(nextEnd, nextTask.end);
-  } while (i < tasks.length);
-  return nextTasks;
-}
+  static extractCurrent(tasks: Task[]): Task[] {
+    const notCurrentStatus = [TaskStatus.Sleep, TaskStatus.Done];
+    return tasks.filter(t => notCurrentStatus.indexOf(t.status) === -1);
+  }
 
-export function distinctCurrentTask(ta: Task[], tb: Task[]): boolean {
-  let tbFiltered = extractCurrentTasks(tb);
+  static extractNext(tasks: Task[]): Task[] {
+    let i = tasks.findIndex(t => t.status == TaskStatus.Sleep);
+    if (i === -1) { return []; }
+    let nextTasks = [tasks[i]];
+    let nextEnd = nextTasks[0].end;
+    do {
+      let nextTask = tasks[++i];
+      if (nextTask.start > nextEnd) { break; }
+      nextTasks.push(nextTask);
+      nextEnd = Math.min(nextEnd, nextTask.end);
+    } while (i < tasks.length);
+    return nextTasks;
+  }
 
-  extractCurrentTasks(ta).forEach(t => {
-    let i = tbFiltered.findIndex(tp => compareTask(t, tp));
-    if (i === -1) { return false; }
-    tbFiltered.splice(i, 1);
-  });
-  return tbFiltered.length === 0;
+  static distinct(ta: Task[], tb: Task[]): boolean {
+    let tbCopy = [].concat(tb);
+    ta.forEach(t => {
+      let i = tbCopy.findIndex(tp => t === tp);
+      if (i === -1) { return; }
+      tbCopy.splice(i, 1);
+    });
+    return tbCopy.length === 0;
+  }
+
+  static distinctCurrent(ta: Task[], tb: Task[]): boolean {
+    let tbFiltered = TaskHelper.extractCurrent(tb);
+
+    TaskHelper.extractCurrent(ta).forEach(t => {
+      let i = tbFiltered.findIndex(tp => t === tp);
+      if (i === -1) { return; }
+      tbFiltered.splice(i, 1);
+    });
+    return tbFiltered.length === 0;
+  }
+
 }

@@ -6,9 +6,9 @@ import { timelineDispatcher,
 import { TimelineAction }             from '../../core/timeline-state/actions';
 import { TimelineState}            from '../../core/timeline-state/timeline-state.interface';
 import { Task,
-         extractCurrentTasks} from '../gears/task.interface';
+         TaskHelper} from '../gears/task.interface';
 import { ConductorService }   from '../gears/conductor.service';
-import { DeliveryService }    from '../gears/delivery.service';
+import { AgentService }    from '../gears/agent.service';
 import { Agent }              from '../agents/agent.abstract';
 
 @Component({
@@ -24,7 +24,7 @@ export class FocusComponent implements OnInit {
     @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
     @Inject(timelineState) private tlState: Observable<TimelineState>,
     private conductor: ConductorService,
-    private delivery: DeliveryService
+    private delivery: AgentService
   ) {
     this.tasks = this.firstTasks();
     this.timelefts = this.computeTimelefts();
@@ -37,7 +37,7 @@ export class FocusComponent implements OnInit {
     return Observable.combineLatest(this.delivery.agents, this.tasks, (a: Agent[], t: Task[]) => {return { agents: a, tasks: t }; })
       .map(value => {
         return value.tasks.map(t => {
-          return value.agents.find(a => a.service.name === t.serviceName).getInfo(t.id);
+          return value.agents.find(a => a.service.name === t.query.agentName).getInfo(t.query.id);
         });
       });
   }
@@ -52,6 +52,6 @@ export class FocusComponent implements OnInit {
   }
 
   private firstTasks(): Observable<Task[]> {
-    return this.tlState.pluck('timeline').map(extractCurrentTasks);
+    return this.tlState.pluck('timeline').map(TaskHelper.extractCurrent);
   }
 }

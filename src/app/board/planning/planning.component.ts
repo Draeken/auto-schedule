@@ -6,7 +6,7 @@ import { TimelineAction }             from '../../core/timeline-state/actions';
 import { TimelineState}            from '../../core/timeline-state/timeline-state.interface';
 import { Task }               from '../gears/task.interface';
 import { ConductorService }   from '../gears/conductor.service';
-import { DeliveryService }    from '../gears/delivery.service';
+import { AgentService }    from '../gears/agent.service';
 
 @Component({
   selector: 'as-planning',
@@ -20,7 +20,7 @@ export class PlanningComponent implements OnInit {
     @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
     @Inject(timelineState) private tlState: Observable<TimelineState>,
     private conductor: ConductorService,
-    private delivery: DeliveryService
+    private delivery: AgentService
   ) {
     this.tasks = this.firstTasks();
   }

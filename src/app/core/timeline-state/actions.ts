@@ -1,7 +1,7 @@
 import { TaskStatus, Task }   from '../../board/gears/task.interface';
 
 export class UpdateTaskStatusAction {
-  constructor(public serviceName: string, public taskId: number, public newStatus: TaskStatus) {}
+  constructor(public task: Task, public newStatus: TaskStatus) {}
 }
 
 export class UpdateTimelineAction {

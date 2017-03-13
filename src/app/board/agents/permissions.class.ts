@@ -36,13 +36,22 @@ export class Permissions {
     return this._collectionsPerm;
   }
 
+  get documentsPerm(): DocPermission[] {
+    return this._documentsPerm;
+  }
+
   getCollectionsWith(perm: Permission): string[] {
     return this.filterToPerm(this._collectionsPerm, perm)
       .map(cp => cp.collectionName);
   }
 
-  getDocumentsWith(perm: Permission): DocPermission[] {
-    return <DocPermission[]>this.filterToPerm(this._documentsPerm, perm);
+  getDocumentsWith(perm: Permission): Map<string, Object[]> {
+    let map = new Map<string, Object[]>();
+    this.filterToPerm(this._documentsPerm, perm).forEach((d: DocPermission) => {
+      if (!map.has(d.collectionName)) { map.set(d.collectionName, []); }
+      map.get(d.collectionName).push(d.documentsDesc);
+    });
+    return map;
   }
 
   private filterToPerm(col: ColPermission[], perm: Permission) {

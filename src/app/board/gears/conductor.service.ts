@@ -3,14 +3,12 @@ import { Observable, Observer, BehaviorSubject } from 'rxjs';
 
 import { ConflictHandlerService } from './conflict-handler.service';
 import { DataIOService } from '../../core/data-io.service';
-import { DeliveryService } from './delivery.service';
+import { AgentService } from './agent.service';
 import { ResourceMapperService } from './resource-mapper.service';
 import { Activities } from './activities.class';
-import { ServiceQuery } from './service-query.interface';
+import { AgentQuery } from './agent-query.interface';
 import { Task,
-         distinctCurrentTask,
-         extractCurrentTasks,
-         extractNextTasks,
+         TaskHelper,
          TaskStatus } from './task.interface';
 import { TimelineAction,
          UpdateTimelineAction,
@@ -19,13 +17,13 @@ import { TimelineState } from '../../core/timeline-state/timeline-state.interfac
 import { timelineDispatcher, timelineState } from '../../core/timeline-state/state-dispatcher.provider';
 import { Agent }  from '../agents/agent.abstract';
 
-type AgentsQueries = BehaviorSubject<ServiceQuery[]>[];
-interface TimelineContext { agents: Agent[], queries?: AgentsQueries, currentTasks: ServiceQuery[] };
+type AgentsQueries = BehaviorSubject<AgentQuery[]>[];
+interface TimelineContext { agents: Agent[], queries?: AgentsQueries, currentTasks: AgentQuery[] };
 
 @Injectable()
 export class ConductorService {
   constructor(private dataIO: DataIOService,
-              private delivery: DeliveryService,
+              private delivery: AgentService,
               private conflictHandler: ConflictHandlerService,
               private resourceMapper: ResourceMapperService,
               @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
@@ -47,18 +45,18 @@ export class ConductorService {
       .switchMap(this.setTimerForNextTasks)
       .subscribe(this.handleStartedTask);
     timeline
-      .map(extractCurrentTasks)
-      .distinctUntilChanged(distinctCurrentTask)
+      .map(TaskHelper.extractCurrent)
+      .distinctUntilChanged(TaskHelper.distinct)
       .switchMap(this.setTimerForCurrentTasks)
       .subscribe(this.handleTimedTask);
   }
 
   private createTimelineContext(timelineContext: TimelineContext): TimelineContext {
     let agents = timelineContext.agents;
-    let agentsQueries: BehaviorSubject<ServiceQuery[]>[] = [];
+    let agentsQueries: BehaviorSubject<AgentQuery[]>[] = [];
 
     agents.forEach(agent => {
-      let bs = new BehaviorSubject<ServiceQuery[]>([]);
+      let bs = new BehaviorSubject<AgentQuery[]>([]);
       agent.setRequests(bs);
       agentsQueries.push(bs);
     });
@@ -71,10 +69,10 @@ export class ConductorService {
     let queries = timelineContext.queries;
     let agents = timelineContext.agents;
     let agentsFeedback = Observable.zip(
-      agents.map(a => a.feedbackResult), (x: ServiceQuery[], y: ServiceQuery[]) => x.concat(y)
+      agents.map(a => a.feedbackResult), (x: AgentQuery[], y: AgentQuery[]) => x.concat(y)
     ).filter(fb => fb.length !== 0);
-    let queriesObs: Observable<ServiceQuery[]> = Observable.combineLatest(
-      queries, (x: ServiceQuery[], y: ServiceQuery[]) =>  y ? x.concat(y) : x);
+    let queriesObs: Observable<AgentQuery[]> = Observable.combineLatest(
+      queries, (x: AgentQuery[], y: AgentQuery[]) =>  y ? x.concat(y) : x);
     let filledAgentsFeedback = agentsFeedback.withLatestFrom(queriesObs, this.fillAgentsFeedback);
     let currentTasks = timelineContext.currentTasks;
     let timelineObs: Observable<Activities> = queriesObs.merge(filledAgentsFeedback)
@@ -90,7 +88,7 @@ export class ConductorService {
     return agents;
   }
 
-  private fillAgentsFeedback(feedback: ServiceQuery[], queries: ServiceQuery[]) {
+  private fillAgentsFeedback(feedback: AgentQuery[], queries: AgentQuery[]) {
     let existingAgent: Set<string> = new Set();
     feedback.forEach(sq => existingAgent.add(sq.agentName));
     queries.forEach(sq => {
@@ -100,7 +98,7 @@ export class ConductorService {
     return feedback;
   }
 
-  private buildActivities(queries: ServiceQuery[]): Activities {
+  private buildActivities(queries: AgentQuery[]): Activities {
     let activities = new Activities();
     queries.forEach(activities.push);
     return activities;
@@ -108,7 +106,8 @@ export class ConductorService {
 
   private setTimerForNextTasks(timeline: Task[]): Observable<Task> {
     //Logic to handle paused/extended tasks
-    let nextTasks = extractNextTasks(timeline);
+
+    let nextTasks = TaskHelper.extractNext(timeline);
     return Observable.merge(...nextTasks.map(task => {
       return Observable.timer(new Date(task.start)).map(x => task)
     }));
@@ -123,11 +122,12 @@ export class ConductorService {
   private handleTimedTask(timedTask: Task): void {
     //Logic to handle "do not autoterminate" flag
     //Inform agents with corresponding permission about update.
-    this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask.serviceName, timedTask.id, TaskStatus.Done));
+
+    this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask, TaskStatus.Done));
   }
 
   private handleStartedTask(startedTask: Task): void {
-    this.tlDispatcher.next(new UpdateTaskStatusAction(startedTask.serviceName, startedTask.id, TaskStatus.Running));
+    this.tlDispatcher.next(new UpdateTaskStatusAction(startedTask, TaskStatus.Running));
   }
 
 }

@@ -1,23 +1,23 @@
-import { Task, TaskStatus, TaskTransform }         from './task.interface';
-import { ServiceQuery } from './service-query.interface';
+import { Task, TaskStatus }         from './task.interface';
+import { TaskTransform }         from './agent-query.interface';
+import { AgentQuery } from './agent-query.interface';
 
 export interface Marker {
-  serviceName: string;
-  taskId: number;
   time: number;
+  query: AgentQuery;
 };
 
 export class Activities {
   private markers: Marker[] = [];
   private hasConflict = false;
-  private fuzzyQueries: Map<string, ServiceQuery[]> = new Map<string, ServiceQuery[]>();
+  private fuzzyQueries: Map<string, AgentQuery[]> = new Map<string, AgentQuery[]>();
 
   static distinctMarkers(x: Marker[], y: Marker[]): boolean {
     if (x.length !== y.length) {
       return false;
     }
     for (let i = 0; i < x.length; ++i) {
-      if (x[i].taskId !== y[i].taskId || x[i].time !== y[i].time) {
+      if (x[i].query.id !== y[i].query.id || x[i].time !== y[i].time) {
         return false;
       }
     }
@@ -26,28 +26,28 @@ export class Activities {
 
   constructor() {}
 
-  push(q: ServiceQuery): void {
-    let serviceName = q.agentName;
+  push(q: AgentQuery): void {
+    let agentName = q.agentName;
     if (this.isFuzzy(q)) {
-      if (this.fuzzyQueries.has(serviceName)) {
-        this.fuzzyQueries.get(serviceName).push(q);
+      if (this.fuzzyQueries.has(agentName)) {
+        this.fuzzyQueries.get(agentName).push(q);
       } else {
-        this.fuzzyQueries.set(serviceName, [q]);
+        this.fuzzyQueries.set(agentName, [q]);
       }
       return;
     }
-    this.putMarkers(serviceName, q);
+    this.putMarkers(q);
   }
 
-  filter(serviceName: string): Marker[] {
-    return this.markers.filter(m => m.serviceName === serviceName);
+  filter(agentName: string): Marker[] {
+    return this.markers.filter(m => m.query.agentName === agentName);
   }
 
   toArray(): Task[] {
     return this.firstTasks;
   }
 
-  get fuzzyEntries(): Iterator<[string, ServiceQuery[]]> {
+  get fuzzyEntries(): Iterator<[string, AgentQuery[]]> {
     return this.fuzzyQueries.entries();
   }
 
@@ -66,16 +66,14 @@ export class Activities {
     let markerSearch: Marker[] = [this.markers[markerI++]];
     let addToFirst = (mStart: Marker, mEnd: Marker) => firstTasks.push(
       {
-        id: mStart.taskId,
         start: mStart.time,
-        serviceName: mStart.serviceName,
         end: mEnd.time,
         status: TaskStatus.Sleep,
-        transform: { needs: [], updates: [], inserts: [] },
+        query: mStart.query,
       });
     while (markerSearch.length > 0) {
       const marker = this.markers[markerI++];
-      const siblingMarkerI = markerSearch.findIndex(m => m.taskId === marker.taskId && m.serviceName === marker.serviceName);
+      const siblingMarkerI = markerSearch.findIndex(m => m.query.id === marker.query.id && m.query.agentName === marker.query.agentName);
       if (siblingMarkerI !== -1) {
         let mStart: Marker = markerSearch.splice(siblingMarkerI, 1)[0];
         addToFirst(mStart, marker);
@@ -95,11 +93,11 @@ export class Activities {
     result.push([null, this.markers[0]]);
     this.markers.forEach((marker, ind, arr) => {
       const prevLength = setMarker.length;
-      let i = setMarker.findIndex(m => m.sn === marker.serviceName && m.id === marker.taskId);
+      let i = setMarker.findIndex(m => m.sn === marker.query.agentName && m.id === marker.query.id);
       if (i !== -1) {
         setMarker.splice(i, 1);
       } else {
-        setMarker.push({ sn: marker.serviceName, id: marker.taskId });
+        setMarker.push({ sn: marker.query.agentName, id: marker.query.id });
       }
       if (prevLength + setMarker.length === 1 && ind > 0) {
         const prevMarker = arr[ind - 1];
@@ -112,12 +110,12 @@ export class Activities {
     return result;
   }
 
-  private isFuzzy(q: ServiceQuery): boolean {
+  private isFuzzy(q: AgentQuery): boolean {
     return (!q.start || !q.start) && !q.duration;
   }
 
-  private pushMarker(serviceName: string, taskId: number, time: number): void {
-    let marker = { serviceName: serviceName, taskId: taskId, time: time };
+  private pushMarker(query: AgentQuery, time: number): void {
+    let marker = { time: time, query: query };
     let i = this.markers.findIndex(m => m.time > time);
     if (i !== -1) {
       this.markers.splice(i, 0, marker);
@@ -126,19 +124,19 @@ export class Activities {
     }
   }
 
-  public putMarkers(sn: string, q: ServiceQuery): void {
+  public putMarkers(q: AgentQuery): void {
     let start = q.start;
     let end = q.end;
     if (start) {
-      this.pushMarker(sn, q.id, start);
+      this.pushMarker(q, start);
       if (q.duration && !end) {
         end = start + q.duration;
       }
     }
-    this.pushMarker(sn, q.id, end);
+    this.pushMarker(q, end);
     if (q.duration && !start) {
       start = end - q.duration;
-      this.pushMarker(sn, q.id, start);
+      this.pushMarker(q, start);
     }
   }
 }
