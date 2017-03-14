@@ -67,6 +67,18 @@ class ProviderManager {
       });
     })
     this._isValid = false;
+    this.pushNeedForRequester(need);
+  }
+
+  private pushNeedForRequester(need: TaskTransformNeed): void {
+    let agent = this.agents.find(a => a.service.name === this.currentTask.query.agentName);
+    this.agentRequestMap.get(agent).push({
+      need: need,
+      targetTime: this.currentTask.start,
+      taskId: this.currentTask.query.id,
+      serviceName: this.currentTask.query.agentName,
+      context: null
+    });
   }
 
   askProviders(): void {
