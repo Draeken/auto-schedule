@@ -23,6 +23,7 @@ export class DataIOService {
       verbose: true,
       autosave: false,
       autoload: true,
+      serializationMethod: 'pretty',
       throttledSaves: false,
     });
   }
@@ -42,8 +43,10 @@ export class DataIOService {
     return results.slice(0, quantity);
   }
 
-  getCollection(name: string): loki.Collection {
-    return this.loki.getCollection(name);
+  getCollection(name: string, create = false): loki.Collection {
+    let col = this.loki.getCollection(name);
+    col = (!col && create) ? this.loki.addCollection(name) : col;
+    return col;
   }
 
   addCollection(name: string, options?: Object): loki.Collection {
@@ -52,6 +55,14 @@ export class DataIOService {
 
   getAnonCollection(docs?: Object[], options?: Object) {
     return this.loki.anonym(docs, options);
+  }
+
+  resetLoki(): void {
+    this.loki.loadDatabase();
+  }
+
+  saveLoki(): void {
+    this.loki.saveDatabase();
   }
 
   private saveCurrentTasks(tasks: Task[]): void {

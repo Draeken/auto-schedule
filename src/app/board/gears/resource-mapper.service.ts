@@ -33,7 +33,7 @@ export interface RequestToAgent {
 
 interface UpdateRequest {
   docs: loki.Doc[];
-  update: Object;
+  update: UpdateObject[];
 }
 
 export interface TransformResult {
@@ -119,7 +119,19 @@ export class ResourceMapperService {
       .map(this.transToColl.bind(this));
 
     this.delivery.registerTransformColl(this.transformCollObs);
-    //this.transformCollections.subscribe(/*Method to mutate user state*/)
+    this.transformCollections.subscribe(this.updateUserState.bind(this));
+  }
+
+  private updateUserState(map: Map<string, TransformResult>): void {
+    map.forEach((tr, collName) => {
+      let col = this.dataIo.getCollection(collName, true);
+      col.remove(tr.deleted.find({}));
+      col.insert(tr.inserted.find({}));
+      tr.updateRequest.forEach(ur => {
+        this.applyUpdate(ur.docs, ur.update, col);
+      })
+    });
+    this.dataIo.saveLoki();
   }
 
   private ensureInit(map: Map<string, TransformResult>, key: string): Map<string, TransformResult> {
@@ -175,6 +187,7 @@ export class ResourceMapperService {
     return t
       .withLatestFrom(this.delivery.agents)
       .map(this.parseActivities)
+      .do(this.dataIo.resetLoki.bind(this.dataIo))
       .filter(c => c[1])
       .map(c => c[0]);
   }

@@ -11,6 +11,10 @@ declare class loki {
   addCollection(n: string, options?: Object): loki.Collection;
 
   anonym(docs?: Object[], options?: Object): loki.Collection;
+
+  loadDatabase(options?: Object, callback?: Function): void;
+
+  saveDatabase(callback?: Function): void;
 }
 
 declare module loki {
