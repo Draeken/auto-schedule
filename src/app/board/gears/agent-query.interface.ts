@@ -5,9 +5,20 @@ export interface TaskTransformNeed {
   quantity: number,
 }
 
+export enum ArrayMethod {
+  Push,
+  Delete
+}
+
+export interface UpdateObject {
+  property: string;
+  value: string;
+  arrayMethod?: ArrayMethod
+}
+
 export interface TaskTransformUpdate {
   ref: string,
-  update: Object
+  update: UpdateObject[]
 }
 
 export interface TaskTransformInsert {

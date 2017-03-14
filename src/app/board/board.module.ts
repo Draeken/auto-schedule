@@ -28,7 +28,7 @@ import { LoginService }           from './login.service';
     AgentService,
     ConflictHandlerService,
     LoginService,
-    ResourceMapperService
+    ResourceMapperService,
   ]
 })
 export class BoardModule {}

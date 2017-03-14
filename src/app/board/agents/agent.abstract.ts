@@ -8,6 +8,7 @@ import { Permissions,
 import { AgentQuery } from '../gears/agent-query.interface';
 import { Task,
          TaskStatus }         from '../gears/task.interface';
+import { RequestToAgent } from '../gears/resource-mapper.service';
 
 export abstract class Agent {
   protected requests: Subject<AgentQuery[]>;
@@ -21,6 +22,8 @@ export abstract class Agent {
   abstract askForRequest(): void
 
   abstract notifyStateChange(payload: Object): void
+
+  abstract askToProvide(payload: RequestToAgent[]): void
 
   /**
    * Should emit a new request taking into account that this task is done.

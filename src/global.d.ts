@@ -25,8 +25,10 @@ declare module loki {
 
       find(query: Object): loki.Doc[];
 
-      insert(doc: Object | Object[]): loki.Doc | loki.Doc[];
+      insert(doc: Object): loki.Doc | loki.Doc[];
 
-      remove(doc: Object): loki.Doc;
+      remove(doc: loki.Doc | loki.Doc[]): loki.Doc | void;
+
+      update(doc: loki.Doc | loki.Doc[]): loki.Doc | void;
   }
 }

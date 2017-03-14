@@ -8,7 +8,9 @@ import { timelineState }  from '../../core/timeline-state/state-dispatcher.provi
 import { TimelineState}   from '../../core/timeline-state/timeline-state.interface';
 import { Task,
          TaskHelper } from './task.interface';
-import { TaskTransform,
+import { ArrayMethod,
+         UpdateObject,
+         TaskTransform,
          TaskTransformNeed,
          TaskTransformUpdate,
          TaskTransformInsert }  from './agent-query.interface';
@@ -21,7 +23,7 @@ interface Resource {
   collectionName: string;
 }
 
-interface RequestToAgent {
+export interface RequestToAgent {
   need: TaskTransformNeed;
   targetTime: number;
   taskId: number;
@@ -34,18 +36,7 @@ interface UpdateRequest {
   update: Object;
 }
 
-interface UpdateRequestAgent {
-  ids: number[];
-  update: Object;
-}
-
-interface TransformResultAgent {
-  inserted: loki.Doc[];
-  updateRequest: UpdateRequestAgent[];
-  deleted: number[];
-}
-
-interface TransformResult {
+export interface TransformResult {
   inserted: loki.Collection;
   updated: loki.Collection;
   deleted: loki.Collection;
@@ -58,7 +49,7 @@ class ProviderManager {
   private _isValid = true;
 
   constructor(private agents: Agent[], private dataIo: DataIOService) {
-    agents.forEach(m => this.agentRequestMap.set(m, []));
+    agents.forEach(agent => this.agentRequestMap.set(agent, []));
   }
 
   set task(task: Task) { this.currentTask = task; }
@@ -76,6 +67,10 @@ class ProviderManager {
       });
     })
     this._isValid = false;
+  }
+
+  askProviders(): void {
+    this.agentRequestMap.forEach((req, a) => a.askToProvide(req));
   }
 
   private getContext(agent: Agent): loki.Doc[] {
@@ -103,6 +98,7 @@ class ProviderManager {
 
 @Injectable()
 export class ResourceMapperService {
+  private transformCollections: Observable<Map<string, TransformResult>>;
 
   constructor(@Inject(timelineState) private tlState: Observable<TimelineState>,
               private delivery: AgentService,
@@ -110,70 +106,20 @@ export class ResourceMapperService {
     this.handleTimelineChange(this.tlState.pluck('timeline'));
   }
 
+  get transformCollObs(): Observable<Map<string, TransformResult>> {
+    return this.transformCollections;
+  }
+
   private handleTimelineChange(timeline: Observable<Task[]>): void {
-    timeline
+    this.transformCollections = timeline
       .map(TaskHelper.extractLastDone)
       .filter(t => t !== undefined)
       .distinctUntilChanged()
-      .withLatestFrom(this.delivery.agents)
-      .subscribe(this.handleDoneTask.bind(this));
-  }
+      .map(task => task.query.transform)
+      .map(this.transToColl.bind(this));
 
-  private handleDoneTask(context: [Task, Agent[]]): void {
-    let task = context[0];
-    let agents = context[1];
-
-    //If task has "Notice when done" flag, notice agent.
-    let map = this.transToColl(task.query.transform);
-    this.notifyAgents(agents, map);
-
-    //Save changes to loki
-  }
-
-  private notifyAgents(agents: Agent[], map: Map<string, TransformResult>): void {
-    agents.forEach(agent => {
-      let notifyLoad: any = {};
-      agent.service.userPermission.getCollectionsWith(Permission.Watch).forEach(c => {
-        notifyLoad[c] = this.mapTransResultForAgent(map.get(c), [{}]);
-      });
-      agent.service.userPermission.getDocumentsWith(Permission.Watch).forEach((docs, collName) => {
-        notifyLoad[collName] = this.mapTransResultForAgent(map.get(collName), docs);
-      });
-      agent.notifyStateChange(notifyLoad);
-    })
-  }
-
-  private mapTransResultForAgent(tr: TransformResult, docDescs: Object[]): TransformResultAgent {
-    let createSet = (collection: loki.Collection) => {
-      let set = new Set<loki.Doc>();
-      docDescs.forEach(docDesc => collection.find(docDesc).forEach(doc => set.add(doc)))
-      return set;
-    }
-    let updates = createSet(tr.updated);
-    let updateRequest: UpdateRequestAgent[];
-    let inserted = createSet(tr.inserted);
-    let deleted = createSet(tr.deleted);
-
-    tr.updateRequest.forEach(ur => {
-      let docsIds = ur.docs.filter(doc => {
-        if (!updates.has(doc)) {
-          return false;
-        };
-        updates.delete(doc);
-        return true;
-      }).map(d => d.$loki);
-
-      if (docsIds.length === 0) { return; }
-      updateRequest.push({
-        ids: docsIds,
-        update: ur.update
-      });
-    });
-    return {
-      inserted: [...inserted.values()],
-      updateRequest: updateRequest,
-      deleted: [...deleted.values()].map((dt: loki.Doc) => dt.$loki)
-    };
+    this.delivery.registerTransformColl(this.transformCollObs);
+    //this.transformCollections.subscribe(/*Method to mutate user state*/)
   }
 
   private ensureInit(map: Map<string, TransformResult>, key: string): Map<string, TransformResult> {
@@ -251,7 +197,7 @@ export class ResourceMapperService {
         resource.docs.forEach(obj => col.remove(obj));
       });
     });
-    //providerManager -> send requests to agents
+    providerManager.askProviders();
     return [tasks, providerManager.isValid];
   }
 
@@ -260,13 +206,13 @@ export class ResourceMapperService {
     if (!col) {
       console.error(`Collection ${need.collectionName} doesn't exist.`);
       providerManager.pushNeed(need);
-      //Call all agents with corresponding blabla
       return;
     }
     let objs = col.find(need.find);
     if (objs.length < need.quantity) {
-      //Push agent request and send all in one time with delivery method. Agents will respond with feedback obs.
-      providerManager.pushNeed(need);
+      let updatedNeed = Object.assign({}, need);
+      updatedNeed.quantity = need.quantity - objs.length;
+      providerManager.pushNeed(updatedNeed);
       return;
     }
     resources.push({ docs: objs.slice(0, need.quantity), ref: need.ref, collectionName: need.collectionName });
@@ -289,8 +235,25 @@ export class ResourceMapperService {
     col.insert(insert.doc);
   }
 
-  private applyUpdate(obs: Object[], update: Object, col: loki.Collection): void {
-
+  private applyUpdate(obs: loki.Doc[], updates: UpdateObject[], col: loki.Collection): void {
+    let updatedObs = obs.map(o => {
+      updates.forEach(update => {
+        if (update.arrayMethod !== undefined) {
+          if (update.arrayMethod === ArrayMethod.Push) {
+            (<Array<any>>o[update.property]).push(update.value);
+            return;
+          } else if (update.arrayMethod === ArrayMethod.Delete) {
+            let arr = <Array<any>>o[update.property];
+            let i = arr.findIndex(value => value === update.value);
+            if (i !== -1) { arr.splice(i, 1); }
+            return;
+          }
+        }
+        o[update.property] = update.value;
+      });
+      return o;
+    });
+    col.update(updatedObs);
   }
 
 }
