@@ -46,15 +46,21 @@ interface DiffuseTask {
 }
 
 interface ObserveQuery {
-  kind: 'input' | 'output';
+  kind: 'before' | 'during' | 'after';
   collectionName: string;
   find: Object;
 }
 
 interface RelativePos {
-  timeElapsed: TimeBoundary; //Can be negative time
+  timeElapsed?: TimeBoundary; //Can be negative time
   taskId?: number;
   observe: ObserveQuery;
+}
+
+interface ProvideQuery {
+  priority: number;
+  provideAgent: string;
+  provideTask: number;
 }
 
 export interface AgentQuery {
@@ -66,4 +72,5 @@ export interface AgentQuery {
   atomic?: AtomicTask;
   diffuse?: DiffuseTask;
   relativePos?: RelativePos;
+  provide?: ProvideQuery;
 };
