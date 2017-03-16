@@ -77,7 +77,7 @@ export class ConductorService {
     let currentTasks = timelineContext.currentTasks;
     let timelineObs: Observable<Activities> = queriesObs.merge(filledAgentsFeedback)
       .map(queries => queries.concat(currentTasks))
-      .map(this.buildActivities)
+      .map(queries => new Activities(queries))
       .map(this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler))
       .do((t: Activities) => agents.forEach(a => a.feedback(t)));
     this.resourceMapper.updateTimeline(timelineObs
@@ -98,12 +98,6 @@ export class ConductorService {
     return feedback;
   }
 
-  private buildActivities(queries: AgentQuery[]): Activities {
-    let activities = new Activities();
-    queries.forEach(activities.push);
-    return activities;
-  }
-
   private setTimerForNextTasks(timeline: Task[]): Observable<Task> {
     //Logic to handle paused/extended tasks
 
@@ -121,8 +115,6 @@ export class ConductorService {
 
   private handleTimedTask(timedTask: Task): void {
     //Logic to handle "do not autoterminate" flag
-    //Inform agents with corresponding permission about update.
-
     this.tlDispatcher.next(new UpdateTaskStatusAction(timedTask, TaskStatus.Done));
   }
 

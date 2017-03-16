@@ -24,9 +24,11 @@ export class Activities {
     return true;
   }
 
-  constructor() {}
+  constructor(queries: AgentQuery[]) {
+    queries.forEach(this.push);
+  }
 
-  push(q: AgentQuery): void {
+  private push(q: AgentQuery): void {
     let agentName = q.agentName;
     if (this.isFuzzy(q)) {
       if (this.fuzzyQueries.has(agentName)) {

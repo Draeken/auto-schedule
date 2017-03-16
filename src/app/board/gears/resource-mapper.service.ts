@@ -8,8 +8,7 @@ import { timelineState }  from '../../core/timeline-state/state-dispatcher.provi
 import { TimelineState}   from '../../core/timeline-state/timeline-state.interface';
 import { Task,
          TaskHelper } from './task.interface';
-import { ArrayMethod,
-         UpdateObject,
+import { UpdateObject,
          TaskTransform,
          TaskTransformNeed,
          TaskTransformUpdate,
@@ -264,10 +263,10 @@ export class ResourceMapperService {
     let updatedObs = obs.map(o => {
       updates.forEach(update => {
         if (update.arrayMethod !== undefined) {
-          if (update.arrayMethod === ArrayMethod.Push) {
+          if (update.arrayMethod === 'Push') {
             (<Array<any>>o[update.property]).push(update.value);
             return;
-          } else if (update.arrayMethod === ArrayMethod.Delete) {
+          } else if (update.arrayMethod === 'Delete') {
             let arr = <Array<any>>o[update.property];
             let i = arr.findIndex(value => value === update.value);
             if (i !== -1) { arr.splice(i, 1); }

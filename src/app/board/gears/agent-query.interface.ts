@@ -5,15 +5,10 @@ export interface TaskTransformNeed {
   quantity: number,
 }
 
-export enum ArrayMethod {
-  Push,
-  Delete
-}
-
 export interface UpdateObject {
   property: string;
   value: string;
-  arrayMethod?: ArrayMethod
+  arrayMethod?: 'Push' | 'Delete';
 }
 
 export interface TaskTransformUpdate {
@@ -32,12 +27,43 @@ export interface TaskTransform {
   inserts: TaskTransformInsert[]
 }
 
+interface TimeBoundary {
+  tartgetTime: number;
+  min?: number;
+  max?: number;
+}
+
+interface AtomicTask {
+  duration?: TimeBoundary;
+  start?: TimeBoundary;
+  end?: TimeBoundary;
+}
+
+interface DiffuseTask {
+  taskDuration: TimeBoundary;
+  pauseDuration: TimeBoundary;
+  totalDuration: TimeBoundary;
+}
+
+interface ObserveQuery {
+  kind: 'input' | 'output';
+  collectionName: string;
+  find: Object;
+}
+
+interface RelativePos {
+  timeElapsed: TimeBoundary; //Can be negative time
+  taskId?: number;
+  observe: ObserveQuery;
+}
+
 export interface AgentQuery {
   agentName: string;
   id: number;
-  start?: number;
-  end?: number;
-  duration?: number;
-  minimalDuration: number;
-  transform: TaskTransform
+  transform: TaskTransform;
+  autoterminate: boolean;
+  notifyWhenDone: boolean;
+  atomic?: AtomicTask;
+  diffuse?: DiffuseTask;
+  relativePos?: RelativePos;
 };
