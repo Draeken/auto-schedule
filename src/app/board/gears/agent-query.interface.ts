@@ -1,8 +1,8 @@
 export interface TaskTransformNeed {
-  collectionName: string,
-  ref: string, //Unique ID
-  find: Object,
-  quantity: number,
+  collectionName: string;
+  ref: string; // Unique ID
+  find: Object;
+  quantity: number;
 }
 
 export interface UpdateObject {
@@ -12,28 +12,28 @@ export interface UpdateObject {
 }
 
 export interface TaskTransformUpdate {
-  ref: string,
-  update: UpdateObject[]
+  ref: string;
+  update: UpdateObject[];
 }
 
 export interface TaskTransformInsert {
-  collectionName: string,
-  doc: Object,
+  collectionName: string;
+  doc: Object;
 }
 
 export interface TaskTransform {
-  needs: TaskTransformNeed[],
-  updates: TaskTransformUpdate[],
-  inserts: TaskTransformInsert[]
+  needs: TaskTransformNeed[];
+  updates: TaskTransformUpdate[];
+  inserts: TaskTransformInsert[];
 }
 
-interface TimeBoundary {
-  tartgetTime: number;
+export interface TimeBoundary {
+  tartgetTime?: number;
   min?: number;
   max?: number;
 }
 
-interface AtomicTask {
+export interface AtomicTask {
   duration?: TimeBoundary;
   start?: TimeBoundary;
   end?: TimeBoundary;
@@ -45,22 +45,22 @@ interface DiffuseTask {
   totalDuration: TimeBoundary;
 }
 
-interface ObserveQuery {
-  kind: 'before' | 'during' | 'after';
+interface RelativePos {
+  timeElapsed?: TimeBoundary; // Can be negative time
+  kind: 'before' | 'after';
   collectionName: string;
   find: Object;
-}
-
-interface RelativePos {
-  timeElapsed?: TimeBoundary; //Can be negative time
-  taskId?: number;
-  observe: ObserveQuery;
 }
 
 interface ProvideQuery {
   priority: number;
   provideAgent: string;
   provideTask: number;
+}
+
+interface LinkTask {
+  offset: TimeBoundary;
+  taskId: number;
 }
 
 export interface AgentQuery {
@@ -73,4 +73,5 @@ export interface AgentQuery {
   diffuse?: DiffuseTask;
   relativePos?: RelativePos;
   provide?: ProvideQuery;
+  linkedTo?: LinkTask[];
 };

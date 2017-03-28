@@ -1,4 +1,4 @@
-import { AgentInfo }    from '../../board/gears/service';
+import { AgentInfo }    from '../../board/agents/agent-info.interface';
 
 import { UserStates } from './user-states.interface';
 
