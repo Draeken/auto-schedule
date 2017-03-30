@@ -32,9 +32,9 @@ export class Activities {
 
   private placeAtomic(): void {
     this.atomicQueries.forEach(query => {
-      let start = query.atomic.start ? query.atomic.start.tartgetTime : undefined;
-      let end = query.atomic.end ? query.atomic.end.tartgetTime : undefined;
-      const duration = query.atomic.duration ? query.atomic.duration.tartgetTime : undefined;
+      let start = query.atomic.start ? query.atomic.start.target : undefined;
+      let end = query.atomic.end ? query.atomic.end.target : undefined;
+      const duration = query.atomic.duration ? query.atomic.duration.target : undefined;
       if (start) {
         this.pushMarker(query, start);
         if (duration && !end) {
@@ -107,10 +107,10 @@ export class Activities {
 
   private queryIsAtomicStrict(query: AgentQuery): boolean {
     return query.atomic !== undefined &&
-        (query.atomic.start.tartgetTime !== undefined &&
-          (query.atomic.end.tartgetTime !== undefined || query.atomic.duration.tartgetTime !== undefined) ||
-        (query.atomic.end.tartgetTime !== undefined &&
-          (query.atomic.start.tartgetTime !== undefined || query.atomic.duration.tartgetTime !== undefined)));
+        (query.atomic.start.target !== undefined &&
+          (query.atomic.end.target !== undefined || query.atomic.duration.target !== undefined) ||
+        (query.atomic.end.target !== undefined &&
+          (query.atomic.start.target !== undefined || query.atomic.duration.target !== undefined)));
   }
 
   private queryIsAtomicObserving(query: AgentQuery): boolean {

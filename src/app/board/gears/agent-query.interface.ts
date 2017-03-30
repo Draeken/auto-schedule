@@ -28,7 +28,7 @@ export interface TaskTransform {
 }
 
 export interface TimeBoundary {
-  tartgetTime?: number;
+  target?: number;
   min?: number;
   max?: number;
 }
