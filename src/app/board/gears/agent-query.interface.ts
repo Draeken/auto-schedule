@@ -40,9 +40,9 @@ export interface AtomicTask {
 }
 
 interface DiffuseTask {
-  taskDuration: TimeBoundary;
-  pauseDuration: TimeBoundary;
-  totalDuration: TimeBoundary;
+  taskDuration?: TimeBoundary;
+  pauseDuration?: TimeBoundary;
+  totalDuration?: TimeBoundary;
 }
 
 interface RelativePos {

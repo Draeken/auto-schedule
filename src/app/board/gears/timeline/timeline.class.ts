@@ -2,24 +2,21 @@ import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 
-import { Task, TaskStatus } from './task.interface';
-import { TaskTransform } from './agent-query.interface';
-import { AgentQuery, TimeBoundary, AtomicTask } from './agent-query.interface';
+import { Task, TaskStatus } from '../task.interface';
+import { AgentQuery,
+         TimeBoundary,
+         AtomicTask,
+         TaskTransform } from '../agent-query.interface';
+import { Placement } from './placement.class';
+import { optimalPlacement } from './optimal-placement.function';
 
-interface Placement {
-  start: number;
-  end: number;
-  satisfaction: number;
-  readonly query: AgentQuery;
-};
-
-enum MarkerKind {
+export enum MarkerKind {
   Start,
   End,
   Both
 }
 
-interface Marker {
+export interface Marker {
   readonly time: TimeBoundary;
   readonly id: string;
   readonly kind: MarkerKind;
@@ -37,13 +34,16 @@ interface TargetPoint {
   readonly satisfaction: number;
 }
 
-interface PossiblePos {
+export interface PossiblePos {
   readonly start: Marker[];
   readonly end: Marker[];
 };
 
 export class Timeline {
   private queriesObs: Map<string, Observable<Placement>> = new Map();
+
+  // Diffuse query have a low priority
+  private diffuseQueriesObs: Map<string, Observable<Placement[]>> = new Map();
   private timeline: Observable<Placement[]>;
   private userState: Observable<Object>;
   private timelineMarkers: Observable<Marker[]>;
@@ -54,6 +54,8 @@ export class Timeline {
     this.timelineMarkers = Observable.of([
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
+
+    // Distinct atomic from diffuse.
     allQueries.forEach(query => {
       this.queriesObs.set(query.agentName + query.id, new Subject());
     });
@@ -63,14 +65,12 @@ export class Timeline {
   }
 
   private placeQuery(query: AgentQuery): void {
-    Observable.combineLatest(
-      this.ObsFromAtomic.bind(this),
-      this.mergeToPossiblePlace.bind(this)
-    ).subscribe(this.selectBestsPos.bind(this));
-  }
-
-  private selectBestsPos(pos: PossiblePos): void {
-    console.log(pos);
+    Observable
+      .combineLatest(
+        this.ObsFromAtomic.call(this, query.atomic),
+        this.mergeToPossiblePlace.bind(this))
+      .withLatestFrom(this.timeline)
+      .map(optimalPlacement.bind(undefined, query));
   }
 
   private mergeToPossiblePlace(...markersArr: Marker[][]): PossiblePos {
