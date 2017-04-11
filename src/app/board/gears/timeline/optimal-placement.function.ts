@@ -1,19 +1,26 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Observable } from 'rxjs/Observable';
 
 import { PossiblePos, Marker } from './timeline.class';
 import { AgentQuery, TimeBoundary } from '../agent-query.interface';
 import { Placement, MoveKind } from './placement.class';
 
-export function optimalPlacement(query: AgentQuery, pos: PossiblePos, timeline: Placement[]): Placement[] {
-  const placements: Placement[] = [];
+// export class OptimalPlacement {
+//   readonly placements: Placement[] = [];
+//
+//   constructor (private timeline: Observable<Placement[]>) {}
+//
+//   pos.start.forEach(start => {
+//     pos.end.forEach(end => {
+//       placements.push(computeBestPlacement(start, end, query));
+//     });
+//   });
+//
+//   return placements;
+// }
 
-  pos.start.forEach(start => {
-    pos.end.forEach(end => {
-      placements.push(computeBestPlacement(start, end, query));
-    });
-  });
+export function arrangePlacement(placementsInConflict: Placement[]): void {
 
-  return placements;
 }
 
 function computeBestPlacement(start: Marker, end: Marker, query: AgentQuery): Placement {
@@ -27,7 +34,7 @@ function computeBestPlacement(start: Marker, end: Marker, query: AgentQuery): Pl
 
   while (loopCount++ < maxLoop) {
     const satis = neighborhood.selectBestNeighbor();
-    if (satis > bestPos.satisfaction.value) {
+    if (satis > bestPos.satisfaction) {
       bestPos.setStartEnd(currentPos.start, currentPos.end);
       loopCount = 0;
     }

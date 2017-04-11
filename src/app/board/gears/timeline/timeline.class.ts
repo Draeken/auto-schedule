@@ -8,7 +8,7 @@ import { AgentQuery,
          AtomicTask,
          TaskTransform } from '../agent-query.interface';
 import { Placement } from './placement.class';
-import { optimalPlacement } from './optimal-placement.function';
+import { arrangePlacement } from './optimal-placement.function';
 
 export enum MarkerKind {
   Start,
@@ -40,11 +40,7 @@ export interface PossiblePos {
 };
 
 export class Timeline {
-  private queriesObs: Map<string, Observable<Placement>> = new Map();
-
-  // Diffuse query have a low priority
-  private diffuseQueriesObs: Map<string, Observable<Placement[]>> = new Map();
-  private timeline: Observable<Placement[]>;
+  private timeline: BehaviorSubject<Placement[]> = new BehaviorSubject([]);
   private userState: Observable<Object>;
   private timelineMarkers: Observable<Marker[]>;
   private minTime = Date.now();
@@ -54,23 +50,55 @@ export class Timeline {
     this.timelineMarkers = Observable.of([
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
-
-    // Distinct atomic from diffuse.
-    allQueries.forEach(query => {
-      this.queriesObs.set(query.agentName + query.id, new Subject());
-    });
-    this.timeline = Observable.combineLatest(...this.queriesObs.values(),
-      (...queries: Placement[]) => queries.sort((x, y) => x.end - y.end)).startWith([]);
-    allQueries.forEach(this.placeQuery, this);
+    Observable
+      .combineLatest(allQueries.map(this.queriesToPlacements.bind(this)), this.mergeToBestArrangedPlacement)
+      .map(placements => placements.sort((x, y) => x.end - y.end))
+      .subscribe(placements => this.timeline.next(placements));
   }
 
-  private placeQuery(query: AgentQuery): void {
-    Observable
+  private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
+    return Observable
       .combineLatest(
         this.ObsFromAtomic.call(this, query.atomic),
         this.mergeToPossiblePlace.bind(this))
-      .withLatestFrom(this.timeline)
-      .map(optimalPlacement.bind(undefined, query));
+      .map(this.createPlacements.bind(this, query));
+  }
+
+  private mergeToBestArrangedPlacement(placementsArr: Placement[][]): Placement[] {
+    placementsArr.forEach(placements => placements.forEach(this.handleNewPlacement));
+    let bestSatis = placementsArr.map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2));
+
+    while (true) {
+      arrangePlacement(bestSatis);
+      const newBest = placementsArr.map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2));
+      if (newBest.every((p1, i) => p1 === bestSatis[i])) {
+        break;
+      }
+      bestSatis = newBest;
+    }
+    return bestSatis;
+  }
+
+  private handleNewPlacement(placement: Placement): void {
+    if (placement.isNew) {
+      arrangePlacement([placement]);
+    }
+  }
+
+  private flatten<T>(arr: T[][]): T[] {
+    return arr.reduce((a, b) => a.concat(b), []);
+  }
+
+
+  private createPlacements(query: AgentQuery, pos: PossiblePos): Placement[] {
+    const placements: Placement[] = [];
+    pos.start.forEach(start => {
+      pos.end.forEach(end => {
+        placements.push(new Placement(start, end, query));
+      });
+    });
+
+    return placements;
   }
 
   private mergeToPossiblePlace(...markersArr: Marker[][]): PossiblePos {

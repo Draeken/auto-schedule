@@ -16,16 +16,24 @@ export enum MoveKind {
 export class Placement {
   private _start: number;
   private _end: number;
-  private readonly query: AgentQuery;
-  readonly satisfaction: BehaviorSubject<number> = new BehaviorSubject(0);
+  private _isNew = true;
+  private _satisfaction = 0;
+  readonly query: AgentQuery;
   readonly startMarker: Marker;
   readonly endMarker: Marker;
-  readonly conflicts: BehaviorSubject<Placement[]> = new BehaviorSubject([]);
 
   constructor(start: Marker, end: Marker, query: AgentQuery) {
     this.startMarker = start;
     this.endMarker = end;
-    this.conflicts.subscribe(this.handleConflictsUpdate.bind(this));
+    this.query = query;
+  }
+
+  get satisfaction() {
+    return this._satisfaction;
+  }
+
+  get isNew() {
+    return this._isNew;
   }
 
   get start() {
@@ -70,7 +78,8 @@ export class Placement {
       satisfaction *= this.computeSatisfaction(this.endMarker, this._end);
     }
 
-    this.satisfaction.next(satisfaction);
+    this._satisfaction = satisfaction;
+    this._isNew = false;
     return satisfaction;
   }
 
@@ -102,9 +111,5 @@ export class Placement {
   private computeImage(p1: Point, p2: Point, pos: number): number {
     const a = (p2.x - p1.x) / (p2.y - p1.y);
     return (pos - p1.x) * a;
-  }
-
-  private handleConflictsUpdate(placements: Placement[]): void {
-
   }
 };
