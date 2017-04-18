@@ -8,7 +8,7 @@ import { AgentQuery,
          AtomicTask,
          TaskTransform } from '../agent-query.interface';
 import { Placement } from './placement.class';
-import { arrangePlacement } from './optimal-placement.function';
+import { OptimalPlacement } from './optimal-placement.function';
 
 export enum MarkerKind {
   Start,
@@ -45,8 +45,10 @@ export class Timeline {
   private timelineMarkers: Observable<Marker[]>;
   private minTime = Date.now();
   private maxTime = Date.now() + 3600000 * 24 * 14;
+  private optimalPlacement: OptimalPlacement;
 
   constructor(allQueries: AgentQuery[]) {
+    this.optimalPlacement = new OptimalPlacement(this.minTime, this.maxTime);
     this.timelineMarkers = Observable.of([
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
@@ -66,11 +68,11 @@ export class Timeline {
 
   private mergeToBestArrangedPlacement(placementsArr: Placement[][]): Placement[] {
     placementsArr.forEach(placements => placements.forEach(this.handleNewPlacement));
-    let bestSatis = placementsArr.map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2));
+    let bestSatis = this.pickBestAndSort(placementsArr);
 
     while (true) {
-      arrangePlacement(bestSatis);
-      const newBest = placementsArr.map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2));
+      this.optimalPlacement.arrangePlacement(bestSatis);
+      const newBest = this.pickBestAndSort(placementsArr);
       if (newBest.every((p1, i) => p1 === bestSatis[i])) {
         break;
       }
@@ -79,9 +81,15 @@ export class Timeline {
     return bestSatis;
   }
 
+  private pickBestAndSort(placementsArr: Placement[][]): Placement[] {
+    return placementsArr
+            .map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2))
+            .sort((p1, p2) => p2.start - p1.start);
+  }
+
   private handleNewPlacement(placement: Placement): void {
     if (placement.isNew) {
-      arrangePlacement([placement]);
+      this.optimalPlacement.arrangePlacement([placement]);
     }
   }
 

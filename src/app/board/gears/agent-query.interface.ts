@@ -69,6 +69,7 @@ export interface AgentQuery {
   transform: TaskTransform;
   autoterminate: boolean;
   notifyWhenDone: boolean;
+  dontColide: boolean;
   atomic?: AtomicTask;
   diffuse?: DiffuseTask;
   relativePos?: RelativePos;
