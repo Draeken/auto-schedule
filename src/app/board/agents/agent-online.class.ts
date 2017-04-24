@@ -1,9 +1,9 @@
 import { Observable } from 'rxjs';
 
-import { Agent }  from './agent.abstract';
-import { Marker,
-         Activities } from '../gears/activities.class';
-import { Task }   from '../gears/task.interface';
+import { Agent } from './agent.abstract';
+import { Timeline } from '../gears/timeline/timeline.class';
+import { Placement } from '../gears/timeline/placement.class';
+import { Task } from '../gears/task.interface';
 import { AgentInfo} from './agent-info.interface';
 import { RequestToAgent } from '../gears/resource-mapper.service';
 
@@ -14,7 +14,7 @@ export class AgentOnline extends Agent {
   }
 
   getInfo(taskId: number): string {
-    return "test";
+    return 'test';
   }
 
   askForRequest(): void {
@@ -33,7 +33,7 @@ export class AgentOnline extends Agent {
     console.info('end task', task);
   }
 
-  protected requestFeedback(timeline: Marker[]): void {
+  protected requestFeedback(timeline: Placement[]): void {
     console.log(this.service.name, timeline);
   }
 }

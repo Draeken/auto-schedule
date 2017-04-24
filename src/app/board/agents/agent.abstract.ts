@@ -1,13 +1,15 @@
-import { Observable, Subject, BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
+import { Subject } from 'rxjs/Subject';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import { Marker,
-         Activities }   from '../gears/activities.class';
-import { AgentInfo }      from './agent-info.interface';
+import { Timeline } from '../gears/timeline/timeline.class';
+import { Placement } from '../gears/timeline/placement.class';
+import { AgentInfo } from './agent-info.interface';
 import { Permissions,
-         Permission }  from './permissions.class';
+         Permission } from './permissions.class';
 import { AgentQuery } from '../gears/agent-query.interface';
 import { Task,
-         TaskStatus }         from '../gears/task.interface';
+         TaskStatus } from '../gears/task.interface';
 import { RequestToAgent } from '../gears/resource-mapper.service';
 
 export abstract class Agent {
@@ -30,7 +32,7 @@ export abstract class Agent {
    */
   protected abstract endTask(task: Task): void
 
-  protected abstract requestFeedback(timeline: Marker[]): void;
+  protected abstract requestFeedback(timeline: Placement[]): void;
 
   get feedbackResult(): Observable<AgentQuery[]> {
     return this.feedbackObs;
@@ -44,12 +46,12 @@ export abstract class Agent {
     this.requests = requests;
   }
 
-  feedback(timeline: Activities): void {
+  feedback(timeline: Timeline): void {
     this.requestFeedback(timeline.filter(this._service.name));
   }
 
   canProvide(collectionName: string): boolean {
-    let colPerm = this._service.userPermission.collectionsPerm.find(c => c.collectionName === collectionName);
+    const colPerm = this._service.userPermission.collectionsPerm.find(c => c.collectionName === collectionName);
     return Permissions.getPermissions(colPerm.permission).has(Permission.Provide);
   }
 }

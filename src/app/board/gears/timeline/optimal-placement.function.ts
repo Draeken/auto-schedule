@@ -50,7 +50,11 @@ export class OptimalPlacement {
   }
 
   private findPlacementsToBoost(placements: Placement[], maxGap: number): Placement[] {
-    return [];
+    let avgSatis = 1;
+    if (placements.length > 1) {
+        avgSatis = placements.map(p => p.satisfaction).reduce((s1, s2) => s1 + s2) / placements.length;
+    }
+    return placements.filter(p => p.satisfaction < avgSatis * (1 - maxGap));
   }
 
   private resolveConflict(conflict: Conflict): void {
@@ -134,26 +138,8 @@ export class OptimalPlacement {
   }
 }
 
-// function computeBestPlacement(start: Marker, end: Marker, query: AgentQuery): Placement {
-//   let loopCount = 0;
-//   const bestPos = new Placement(start, end, query);
-//   const currentPos = new Placement(start, end, query);
-//   const maxLoop = 20;
-//   const neighborhood = new Neighborhood(currentPos);
-//
-//   currentPos.setStartEnd(start.time.target || start.time.max, end.time.target || end.time.min);
-//
-//   while (loopCount++ < maxLoop) {
-//     const satis = neighborhood.selectBestNeighbor();
-//     if (satis > bestPos.satisfaction) {
-//       bestPos.setStartEnd(currentPos.start, currentPos.end);
-//       loopCount = 0;
-//     }
-//   }
-//   return bestPos;
-// }
-
 interface MoveInfo {
+  placement: Placement;
   kind: MoveKind;
   value: number;
   satisfaction: number;
@@ -165,8 +151,13 @@ interface Bound {
   end: number;
 }
 
+interface MoveCheck {
+  kinds: MoveKind[];
+  directions: number[];
+}
+
 class Neighborhood {
-  private moveMap = new Map<Placement, MoveInfo[]>();
+  private moveMap = new Map<Placement, MoveInfo[][]>();
 
   constructor(private allPlacements: Placement[]) {}
 
@@ -178,49 +169,107 @@ class Neighborhood {
         this.createEntry(p);
       }
     });
+    this.findBestAndApply();
+  }
+
+  private findBestAndApply(): void {
+    let bestAvgSatis = 0;
+    let bestMove: MoveInfo[];
+    for (const [_, movesInfos] of this.moveMap) {
+      const localBestMove = <[MoveInfo[], number]>movesInfos
+        .map((m1) => {
+          const avgSatis = m1.map(m => this.computeAvgSatis(m)).reduce((a1, a2) => a1 + a2) / m1.length;
+          return [m1, avgSatis];
+        })
+        .reduce((m1, m2) => m1[1] > m2[1] ? m1 : m2);
+      if (localBestMove[1] > bestAvgSatis) {
+        bestAvgSatis = localBestMove[1];
+        bestMove = localBestMove[0];
+      }
+    }
+    this.applyMove(bestMove);
+  }
+
+  private applyMove(moveInfos: MoveInfo[]): void {
+    if (!moveInfos.length) { return; }
+    const placements: Placement[] = [];
+    moveInfos.forEach(moveInfo => {
+      moveInfo.placement.updatePos(moveInfo.kind, moveInfo.value);
+      this.moveMap.delete(moveInfo.placement);
+      placements.push(moveInfo.placement);
+      this.applyMove(moveInfo.additionalMove);
+    });
+    this.moveMap.forEach((moves, key, map) => {
+      map.set(key, moves.filter(m => !this.findPlacement(placements, m)));
+    });
+  }
+
+  private findPlacement(placements: Placement[], moveInfos: MoveInfo[]): boolean {
+    if (!moveInfos.length) { return false; }
+    return moveInfos.some(moveInfo => {
+      return placements.some(p => p === moveInfo.placement) || this.findPlacement(placements, moveInfo.additionalMove);
+    });
+  }
+
+  private computeAvgSatis(moveInfo: MoveInfo): number {
+    const addiSatis = moveInfo.additionalMove.length ? moveInfo.additionalMove
+      .map(m => this.computeAvgSatis(m))
+      .reduce((m1, m2) => m1 + m2) : 1;
+    return (moveInfo.satisfaction * addiSatis) / (moveInfo.additionalMove.length + 1);
   }
 
   private createEntry(placement: Placement): void {
-    const moves: MoveInfo[] = [];
-    moves.push(...this.buildMove(MoveKind.Start, placement, [-1, 1]));
-    moves.push(...this.buildMove(MoveKind.End, placement, [-1, 1]));
+    const moves: MoveInfo[][] = [];
+    moves.push(...this.buildMove([MoveKind.Start], placement, [-1, 1]));
+    moves.push(...this.buildMove([MoveKind.End], placement, [-1, 1]));
+    moves.push(...this.buildMove([MoveKind.Start, MoveKind.End], placement, [-1, 1]));
     this.moveMap.set(placement, moves);
   }
 
-  private buildMove(kind: MoveKind, placement: Placement, direction: number[]): MoveInfo[] {
+  private buildMove(kinds: MoveKind[], placement: Placement, direction: number[]): MoveInfo[][] {
     const division = 5;
-    const bounds: Bound[] = (m =>
+    const boundsArr: Bound[][] = kinds.map(kind => {
+      return (m =>
       m.time.target ? [{ start: m.time.min, end: m.time.target }, { start: m.time.target, end: m.time.max }]
         : [{ start: m.time.min, end: m.time.max }]).call(this, placement.getMarkers(kind));
-    const position = placement.getPosition(kind);
+    });
+    const positionArr = kinds.map(kind => placement.getPosition(kind));
 
     return direction.map(d => {
-      const bound = bounds.reduce((b1, b2) => b1.start <= position + d &&  d + position <= b1.end ? b1 : b2);
-      const newPos = position + ((bound.end - bound.start) / division) * d;
-      const value = this.clampTarget(newPos, bound.start, bound.end);
-
-      return this.simulateMove(placement, kind, value);
+      const values = kinds.map((kind, i) => {
+        const position = positionArr[i];
+        const bounds = boundsArr[i];
+        const bound = bounds.reduce((b1, b2) => b1.start <= position + d &&  d + position <= b1.end ? b1 : b2);
+        const newPos = position + ((bound.end - bound.start) / division) * d;
+        return this.clampTarget(newPos, bound.start, bound.end);
+      });
+      return this.simulateMove(placement, kinds, values);
     });
   }
 
-  private simulateMove(placement: Placement, kind: MoveKind, moveValue: number): MoveInfo {
+  private simulateMove(placement: Placement, kinds: MoveKind[], moveValues: number[]): MoveInfo[] {
     const pClone = placement.clone();
-    const pSatis = pClone.updatePos(kind, moveValue);
-    const moveInfo = {
+    kinds.forEach((kind, i) => {
+      pClone.updatePos(kind, moveValues[i]);
+    });
+    const pSatis = pClone.satisfaction - placement.satisfaction;
+
+    const moveInfos = kinds.map((kind, i) => ({
+      placement: placement,
       kind: kind,
-      value: moveValue,
+      value: moveValues[i],
       satisfaction: pSatis,
       additionalMove: []
-    };
+    }));
     this.allPlacements.forEach(p => {
       const args = this.checkColision(p, pClone, placement);
-      if (args) { moveInfo.additionalMove.push(this.simulateMove.apply(this, args)); }
+      if (args) { moveInfos[0].additionalMove.push(this.simulateMove.apply(this, args)); }
     });
-    return moveInfo;
+    return moveInfos;
   }
 
   private checkColision(pTest: Placement, pCloned: Placement, pOri: Placement): [Placement, MoveKind, number] {
-    if (pTest === pCloned || pTest.query.dontColide) { return; }
+    if (pTest === pOri || pTest.query.dontColide) { return; }
     const isInside = pTest.start >= pCloned.start && pTest.end <= pCloned.end;
     if ((pTest.start <= pCloned.start && pTest.end > pCloned.start) || (isInside && pTest.end <= pOri.start)) {
       const value = -1 * (pTest.end - pCloned.start);
@@ -236,87 +285,24 @@ class Neighborhood {
   }
 
   private checkMoves(placement: Placement): void {
-    const movesToAdd = new Map<MoveKind, number[]>();
-    movesToAdd.set(MoveKind.Start, [-1, 1]);
-    movesToAdd.set(MoveKind.End, [-1, 1]);
+    const movesToAdd: MoveCheck[] = [];
+    movesToAdd.push({ kinds: [MoveKind.Start], directions: [-1, 1] });
+    movesToAdd.push({ kinds: [MoveKind.End], directions: [-1, 1] });
+    movesToAdd.push({ kinds: [MoveKind.Start, MoveKind.End], directions: [-1, 1] });
     const existingMoves = this.moveMap.get(placement);
 
     existingMoves.forEach(em => {
-      const directions = movesToAdd.get(em.kind);
-      const i = directions.findIndex(v => (em.value > 0) === (v > 0));
+      const moveCheck = movesToAdd.find(mta => mta.kinds.every((mtaKind, i) => mtaKind === em[i].kind));
+      const directions = moveCheck.directions;
+      const i = directions.findIndex(v => (em[0].value > 0) === (v > 0));
       directions.splice(i, 1);
     });
 
-    movesToAdd.forEach((dirs, kind) => {
+    movesToAdd.forEach((moveCheck) => {
+      const dirs = moveCheck.directions;
+      const kinds = moveCheck.kinds;
       if (!dirs.length) { return; }
-      existingMoves.push(...this.buildMove(kind, placement, dirs));
+      existingMoves.push(...this.buildMove(kinds, placement, dirs));
     });
   }
-}
-
-// class Neighborhood {
-//   private readonly taboo: Map<MoveKind, number[]> = new Map();
-//   private readonly steps: Map<MoveKind, number[]> = new Map();
-//
-//   constructor(private placement: Placement) {
-//     this.initSetAndSteps(placement.startMarker.time, MoveKind.Start);
-//     this.initSetAndSteps(placement.endMarker.time, MoveKind.End);
-//   }
-//
-//   private initSetAndSteps(t: TimeBoundary, m: MoveKind) {
-//     if (!t.target) {
-//       this.taboo.set(m, []);
-//       this.steps.set(m, [Math.floor((t.max - t.min) / 20)]);
-//     } else {
-//       this.taboo.set(m, []);
-//       this.steps.set(m, [Math.floor((t.target - t.min) / 10), Math.floor((t.max - t.target) / 10)]);
-//     }
-//   }
-//
-//   selectBestNeighbor(): number {
-//     const neighbor: Move[] = this.selectNeighbor(this.placement.startMarker, MoveKind.Start, this.placement.start)
-//       .concat(this.selectNeighbor(this.placement.endMarker, MoveKind.End, this.placement.end));
-//     let bestSatis = 0;
-//     let bestMove: Move;
-//     neighbor.forEach(move => {
-//       const satis = this.placement.updatePos(move.kind, move.value);
-//       if (satis > bestSatis) {
-//         bestMove = move;
-//         bestSatis = satis;
-//       }
-//     });
-//     this.placement.updatePos(bestMove.kind, bestMove.value);
-//     return bestSatis;
-//   }
-//
-//   private selectNeighbor(t: TimeBoundary, m: MoveKind, curPos: number): Move[] {
-//     const forward: Move = { kind: m, value: this.nextNotInTaboo(t, curPos, m, true) };
-//     const backward: Move = { kind: m, value: this.nextNotInTaboo(t, curPos, m, true) };
-//
-//     return [forward, backward].filter(v => v !== undefined);
-//   }
-//
-//   private nextNotInTaboo(t: TimeBoundary, curPos: number, m: MoveKind, forward: boolean): number {
-//     const taboo = this.taboo.get(m);
-//     const steps = this.steps.get(m);
-//
-//     let nextPos = curPos;
-//     while (taboo.find(n => n === nextPos)) {
-//       let step: number;
-//       if (forward) { step = !t.target ? steps[0] : nextPos + steps[0] > t.target ? steps[0] : steps[1];
-//       } else { step = -1 * (!t.target ? steps[0] : nextPos - steps[1] > t.target ? steps[1] : steps[0]); }
-//
-//       nextPos += step;
-//       if (forward && nextPos > t.max || !forward && nextPos < t.min) {
-//         nextPos = undefined;
-//         break;
-//       }
-//     }
-//     return nextPos;
-//   }
-// }
-
-interface Move {
-  kind: MoveKind;
-  value: number;
 }

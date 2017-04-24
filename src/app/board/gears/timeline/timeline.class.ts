@@ -7,6 +7,7 @@ import { AgentQuery,
          TimeBoundary,
          AtomicTask,
          TaskTransform } from '../agent-query.interface';
+import { ResourceMapperService } from '../resource-mapper.service';
 import { Placement } from './placement.class';
 import { OptimalPlacement } from './optimal-placement.function';
 
@@ -47,7 +48,7 @@ export class Timeline {
   private maxTime = Date.now() + 3600000 * 24 * 14;
   private optimalPlacement: OptimalPlacement;
 
-  constructor(allQueries: AgentQuery[]) {
+  constructor(private resourceMapper: ResourceMapperService, private allQueries: AgentQuery[]) {
     this.optimalPlacement = new OptimalPlacement(this.minTime, this.maxTime);
     this.timelineMarkers = Observable.of([
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
@@ -56,12 +57,19 @@ export class Timeline {
       .combineLatest(allQueries.map(this.queriesToPlacements.bind(this)), this.mergeToBestArrangedPlacement)
       .map(placements => placements.sort((x, y) => x.end - y.end))
       .subscribe(placements => this.timeline.next(placements));
+    this.timeline.subscribe(this.completeProviders);
+  }
+
+  private completeProviders(timeline: Placement[]): void {
+    if (timeline.length === 0) { return; }
+    this.resourceMapper.linkProviders(timeline.map(t => t.query), this.allQueries);
+    // behavior.next(providerStatus.linked);
   }
 
   private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
     return Observable
       .combineLatest(
-        this.ObsFromAtomic.call(this, query.atomic),
+        this.ObsFromBounds.call(this, query.atomic),
         this.mergeToPossiblePlace.bind(this))
       .map(this.createPlacements.bind(this, query));
   }
@@ -234,7 +242,7 @@ export class Timeline {
     };
   }
 
-  private ObsFromAtomic(atomic: AtomicTask): Observable<Marker[]> {
+  private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
     const observables: Observable<Marker>[] = [];
     const start = atomic.start;
     const end = atomic.start;
@@ -247,10 +255,17 @@ export class Timeline {
     return Observable.combineLatest(observables).startWith([]);
   }
 
+  private ObsFromLengthOnly(query: AgentQuery): Observable<Marker[]> {
+    if (query.atomic.start || query.atomic.end || query.linkedTo || query)
+    return this.timeline.map(t => {
+      return [];
+    });
+  }
+
   private handleAtomic(t: TimeBoundary, kind: MarkerKind): Observable<Marker> {
     const min = t.min ? t.min : (t.target ? t.target : this.minTime);
     const max = t.max ? t.max : (t.target ? t.target : this.maxTime);
     const marker: Marker = { id: 'atomic', kind: kind, time: { min: min, max: max, target: t.target } };
-    return new BehaviorSubject(marker);
+    return Observable.of(marker);
   }
 }

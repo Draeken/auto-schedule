@@ -124,11 +124,7 @@ export class Placement {
   }
 
   private computeLengthSatisfaction(): number {
-    const duration = this.query.atomic ?
-      this.query.atomic.duration : this.query.diffuse ?
-        this.query.diffuse.taskDuration : undefined;
-
-    if (!duration) { return 1; }
+    const duration = this.query.atomic.duration || 1;
 
     return this.computeImageFromTimeBoundary(duration, this._end - this._start, 1);
   }

@@ -1,20 +1,23 @@
 import { Injectable,
          Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
 
-import { AgentService }   from './agent.service';
-import { DataIOService }  from '../../core/data-io.service';
-import { timelineState }  from '../../core/timeline-state/state-dispatcher.provider';
-import { TimelineState}   from '../../core/timeline-state/timeline-state.interface';
+import { AgentService } from './agent.service';
+import { DataIOService } from '../../core/data-io.service';
+import { timelineState } from '../../core/timeline-state/state-dispatcher.provider';
+import { TimelineState} from '../../core/timeline-state/timeline-state.interface';
 import { Task,
          TaskHelper } from './task.interface';
 import { UpdateObject,
          TaskTransform,
          TaskTransformNeed,
          TaskTransformUpdate,
-         TaskTransformInsert }  from './agent-query.interface';
-import { Agent }  from '../agents/agent.abstract';
-import { Permission }  from '../agents/permissions.class';
+         TaskTransformInsert,
+         TaskIdentity,
+         taskIdentityToString,
+         AgentQuery } from './agent-query.interface';
+import { Agent } from '../agents/agent.abstract';
+import { Permission } from '../agents/permissions.class';
 
 interface Resource {
   docs: loki.Doc[];
@@ -42,7 +45,14 @@ export interface TransformResult {
   updateRequest: UpdateRequest[];
 }
 
-class ProviderManager {
+interface IProviderManager {
+  task(t: Task): void;
+  isValid(): boolean;
+  pushNeed(need: TaskTransformNeed): void;
+  askProviders(): void;
+}
+
+class ProviderManager implements IProviderManager {
   private agentRequestMap = new Map<Agent, RequestToAgent[]>();
   private currentTask: Task;
   private _isValid = true;
@@ -51,8 +61,8 @@ class ProviderManager {
     agents.forEach(agent => this.agentRequestMap.set(agent, []));
   }
 
-  set task(task: Task) { this.currentTask = task; }
-  get isValid(): boolean { return this._isValid; }
+  task(task: Task) { this.currentTask = task; }
+  isValid(): boolean { return this._isValid; }
 
   pushNeed(need: TaskTransformNeed): void {
     this.agentRequestMap.forEach((requests, agent) => {
@@ -60,22 +70,22 @@ class ProviderManager {
       requests.push({
         need: need,
         targetTime: this.currentTask.start,
-        taskId: this.currentTask.query.id,
-        serviceName: this.currentTask.query.agentName,
+        taskId: this.currentTask.query.taskIdentity.id,
+        serviceName: this.currentTask.query.taskIdentity.agentName,
         context: this.getContext(agent)
       });
-    })
+    });
     this._isValid = false;
     this.pushNeedForRequester(need);
   }
 
   private pushNeedForRequester(need: TaskTransformNeed): void {
-    let agent = this.agents.find(a => a.service.name === this.currentTask.query.agentName);
+    const agent = this.agents.find(a => a.service.name === this.currentTask.query.taskIdentity.agentName);
     this.agentRequestMap.get(agent).push({
       need: need,
       targetTime: this.currentTask.start,
-      taskId: this.currentTask.query.id,
-      serviceName: this.currentTask.query.agentName,
+      taskId: this.currentTask.query.taskIdentity.id,
+      serviceName: agent.service.name,
       context: null
     });
   }
@@ -85,11 +95,10 @@ class ProviderManager {
   }
 
   private getContext(agent: Agent): loki.Doc[] {
-    let context;
-    let agentPerm = agent.service.userPermission;
-    let queries = new Map<string, Object[]>();
+    const agentPerm = agent.service.userPermission;
+    const queries = new Map<string, Object[]>();
 
-    //Maybe use empty array instead of {}
+    // Maybe use empty array instead of {}
     agentPerm.getCollectionsWith(Permission.Context).forEach(c => queries.set(c, [{}]));
     agentPerm.getDocumentsWith(Permission.Context).forEach((docs, collName) => {
       queries.set(collName, docs);
@@ -98,13 +107,106 @@ class ProviderManager {
   }
 
   private executeQueries(queriesMap: Map<string, Object[]>): loki.Doc[] {
-    let results = [];
+    const results = [];
     queriesMap.forEach((queries, collName) => {
-      let coll = this.dataIo.getCollection(collName);
+      const coll = this.dataIo.getCollection(collName);
       queries.forEach(q => results.concat(coll.find(q)));
     });
     return results;
   }
+}
+
+class DummyProviderManager implements IProviderManager {
+  constructor() {}
+  task(t: Task) {}
+  isValid(): boolean { return true; }
+  pushNeed(n: TaskTransformNeed): void {}
+  askProviders(): void {}
+}
+
+interface SatisfactionRecord {
+  satisfaction: number;
+  providerIdent: TaskIdentity;
+}
+
+interface SatisfactionNeed {
+  satisfaction: number;
+  quantity: number;
+  ref: string;
+}
+
+class ProviderLinkerManager implements IProviderManager {
+  private currentTask: Task;
+  private _isValid = true;
+  private firstTime = true;
+  private clientNeeds: TaskTransformNeed[] = [];
+  private clientNeedsAfterProvide: TaskTransformNeed[] = [];
+  private satisRecord: Map<string, SatisfactionRecord[]> = new Map();
+  private providerOrder: AgentQuery[] = [];
+
+  constructor(private dataIo:  DataIOService) {}
+
+  get topProvider(): AgentQuery[] {
+    return this.providerOrder.filter(p => p.provide.higherPriority.length === 0);
+  }
+
+  task(task: Task) { this.currentTask = task; }
+  isValid(): boolean { return this._isValid; }
+
+  pushNeed(need: TaskTransformNeed): void {
+    if (this.firstTime && this.currentTask.start === 1) {
+      this.clientNeeds.push(need);
+    } else {
+      this.firstTime = false;
+    }
+    if (this.currentTask.start === 0) { return; }
+    this.clientNeedsAfterProvide.push(need);
+  }
+
+  updateProvideSatis(provider: AgentQuery): void {
+    let incompatibleMark = false;
+    const satisfiedNeeds: SatisfactionNeed[] = this.clientNeeds.map(n => ({ satisfaction: 1, quantity: n.quantity, ref: n.ref }));
+    this.clientNeedsAfterProvide.forEach(need => {
+      const i = satisfiedNeeds.findIndex(s => s.ref === need.ref);
+      if (i === -1) {
+        incompatibleMark = true;
+        return;
+      }
+      const satis = 1 - need.quantity / satisfiedNeeds[i].quantity;
+      if (satis === 0) {
+        satisfiedNeeds.splice(i, 1);
+      } else {
+        satisfiedNeeds[i].satisfaction = satis;
+      }
+    });
+    if (incompatibleMark) {
+      this.providerOrder.unshift(provider);
+    } else {
+      this.providerOrder.push(provider);
+    }
+    if (!satisfiedNeeds.length) {
+      // TODO: Obsolete. Ask provider to remove this task
+      return;
+    }
+    satisfiedNeeds.forEach(need => {
+      const newRecord = { satisfaction: need.satisfaction, providerIdent: provider.taskIdentity };
+      if (!this.satisRecord.has(need.ref)) {
+        this.satisRecord.set(need.ref, [newRecord]);
+        return;
+      }
+      const record = this.satisRecord.get(need.ref);
+      const wholeSatis = record.map(r => r.satisfaction).reduce((r1, r2) => r1 + r2);
+      if (wholeSatis >= 1) {
+        provider.provide.higherPriority.push(...record.map(r => r.providerIdent));
+      }
+      record.push(newRecord);
+    });
+
+    this.clientNeedsAfterProvide = [];
+  }
+
+  askProviders(): void {}
+
 }
 
 @Injectable()
@@ -121,6 +223,63 @@ export class ResourceMapperService {
     return this.transformCollections;
   }
 
+  updateTimeline(t: Observable<Task[]>): Observable<any> {
+    return t
+      .withLatestFrom(this.delivery.agents)
+      .map(c => <[Task[], IProviderManager]>[c[0], new ProviderManager(c[1], this.dataIo)])
+      .map(this.parseActivities)
+      .do(this.dataIo.resetLoki.bind(this.dataIo))
+      .filter(c => c[1])
+      .map(c => c[0]);
+  }
+
+  linkProviders(placedQueries: AgentQuery[], allQueries: AgentQuery[]): void {
+    const map = this.computeProviderMap(placedQueries, allQueries);
+    const dummyPM = new DummyProviderManager();
+
+    placedQueries.forEach((clientQuery, i) => {
+      const clientTask = this.queryToTask(clientQuery, 1);
+      if (!map.has(i)) {
+        this.parseActivities([[clientTask], dummyPM]);
+        return;
+      }
+      const providerLinker = new ProviderLinkerManager(this.dataIo);
+      const serializedState = this.dataIo.serializeLoki();
+
+      this.parseActivities([[clientTask], providerLinker]);
+      this.dataIo.deserializeLoki(serializedState);
+      map.get(i).sort((p1, p2) => p2.provide.priority - p1.provide.priority).forEach(provider => {
+        this.parseActivities([[this.queryToTask(provider), clientTask], providerLinker]);
+        providerLinker.updateProvideSatis(provider);
+        this.dataIo.deserializeLoki(serializedState);
+        provider.provide.handled = true;
+      });
+      const topProviderTask = providerLinker.topProvider.map(q => this.queryToTask(q));
+      this.parseActivities([[...topProviderTask, clientTask], dummyPM]);
+    });
+  }
+
+  private computeProviderMap(placedQueries: AgentQuery[], allQueries: AgentQuery[]): Map<number, AgentQuery[]> {
+    const map: Map<number, AgentQuery[]> = new Map();
+    allQueries.filter(q => q.provide !== undefined && !q.provide.handled).forEach(q => {
+      const clientQueryI = placedQueries.findIndex(cq => cq.taskIdentity.agentName === cq.provide.provideTask.agentName
+        && cq.taskIdentity.id === cq.provide.provideTask.id);
+      if (clientQueryI === -1) { return; }
+      if (!map.has(clientQueryI)) { map.set(clientQueryI, []); }
+      map.get(clientQueryI).push(q);
+    });
+    return map;
+  }
+
+  private queryToTask(query: AgentQuery, offset: number = 0): Task {
+    return {
+      start: offset,
+      end: offset,
+      status: 0,
+      query: query
+    };
+  }
+
   private handleTimelineChange(timeline: Observable<Task[]>): void {
     this.transformCollections = timeline
       .map(TaskHelper.extractLastDone)
@@ -135,12 +294,12 @@ export class ResourceMapperService {
 
   private updateUserState(map: Map<string, TransformResult>): void {
     map.forEach((tr, collName) => {
-      let col = this.dataIo.getCollection(collName, true);
+      const col = this.dataIo.getCollection(collName, true);
       col.remove(tr.deleted.find({}));
       col.insert(tr.inserted.find({}));
       tr.updateRequest.forEach(ur => {
         this.applyUpdate(ur.docs, ur.update, col);
-      })
+      });
     });
     this.dataIo.saveLoki();
   }
@@ -157,8 +316,8 @@ export class ResourceMapperService {
   }
 
   private transToColl(transform: TaskTransform): Map<string, TransformResult> {
-    let map = new Map<string, TransformResult>();
-    let resources: Resource[] = [];
+    const map = new Map<string, TransformResult>();
+    const resources: Resource[] = [];
 
     transform.inserts.forEach(insert => {
       this.ensureInit(map, insert.collectionName);
@@ -166,8 +325,8 @@ export class ResourceMapperService {
     });
 
     transform.needs.forEach(need => {
-      let colName = need.collectionName;
-      let objs = this.dataIo.findDocs(colName, need.find, need.quantity)
+      const colName = need.collectionName;
+      const objs = this.dataIo.findDocs(colName, need.find, need.quantity);
       resources.push({
         docs: objs,
         ref: need.ref,
@@ -175,11 +334,11 @@ export class ResourceMapperService {
       });
     });
     transform.updates.forEach(update => {
-      let i = resources.findIndex(r => r.ref === update.ref);
-      let resource: Resource = resources.splice(i, 1)[0];
-      let colName = resource.collectionName;
+      const i = resources.findIndex(r => r.ref === update.ref);
+      const resource: Resource = resources.splice(i, 1)[0];
+      const colName = resource.collectionName;
       this.ensureInit(map, colName);
-      let transRes = map.get(colName);
+      const transRes = map.get(colName);
       transRes.updated.insert(resource.docs);
       transRes.updateRequest.push({
         docs: resource.docs,
@@ -194,47 +353,37 @@ export class ResourceMapperService {
     return map;
   }
 
-  updateTimeline(t: Observable<Task[]>): Observable<any> {
-    return t
-      .withLatestFrom(this.delivery.agents)
-      .map(this.parseActivities)
-      .do(this.dataIo.resetLoki.bind(this.dataIo))
-      .filter(c => c[1])
-      .map(c => c[0]);
-  }
-
-  private parseActivities(c: [Task[], Agent[]]): [Task[], boolean] {
-    let tasks = c[0];
-    let agents = c[1];
-    let providerManager = new ProviderManager(agents, this.dataIo);
+  private parseActivities(c: [Task[], IProviderManager]): [Task[], boolean] {
+    const tasks = c[0];
+    const providerManager = c[1];
 
     tasks.forEach(task => {
-      let resources: Resource[];
-      let transform = task.query.transform;
-      providerManager.task = task;
+      const resources: Resource[] = [];
+      const transform = task.query.transform;
+      providerManager.task(task);
       transform.needs.forEach(this.handleNeeds.bind(this, resources, providerManager));
       transform.updates.forEach(this.handleUpdates.bind(this, resources));
       transform.inserts.forEach(this.handleInserts);
 
       resources.forEach(resource => {
-        let col = this.dataIo.getCollection(resource.collectionName);
+        const col = this.dataIo.getCollection(resource.collectionName);
         resource.docs.forEach(obj => col.remove(obj));
       });
     });
     providerManager.askProviders();
-    return [tasks, providerManager.isValid];
+    return [tasks, providerManager.isValid()];
   }
 
-  private handleNeeds(resources: Resource[], providerManager: ProviderManager, need: TaskTransformNeed) {
-    let col = this.dataIo.getCollection(need.collectionName);
+  private handleNeeds(resources: Resource[], providerManager: IProviderManager, need: TaskTransformNeed) {
+    const col = this.dataIo.getCollection(need.collectionName);
     if (!col) {
       console.error(`Collection ${need.collectionName} doesn't exist.`);
       providerManager.pushNeed(need);
       return;
     }
-    let objs = col.find(need.find);
+    const objs = col.find(need.find);
     if (objs.length < need.quantity) {
-      let updatedNeed = Object.assign({}, need);
+      const updatedNeed = Object.assign({}, need);
       updatedNeed.quantity = need.quantity - objs.length;
       providerManager.pushNeed(updatedNeed);
       return;
@@ -243,10 +392,10 @@ export class ResourceMapperService {
   }
 
   private handleUpdates(resources: Resource[], update: TaskTransformUpdate) {
-    let resourceI = resources.findIndex(r => r.ref === update.ref);
-    let resource = resources[resourceI];
+    const resourceI = resources.findIndex(r => r.ref === update.ref);
+    const resource = resources[resourceI];
     resources.splice(resourceI, 1);
-    let col = this.dataIo.getCollection(resource.collectionName);
+    const col = this.dataIo.getCollection(resource.collectionName);
     if (!col) { console.error(`No collection ${resource.collectionName}.`); return; }
     this.applyUpdate(resource.docs, update.update, col);
   }
@@ -260,15 +409,15 @@ export class ResourceMapperService {
   }
 
   private applyUpdate(obs: loki.Doc[], updates: UpdateObject[], col: loki.Collection): void {
-    let updatedObs = obs.map(o => {
+    const updatedObs = obs.map(o => {
       updates.forEach(update => {
         if (update.arrayMethod !== undefined) {
           if (update.arrayMethod === 'Push') {
             (<Array<any>>o[update.property]).push(update.value);
             return;
           } else if (update.arrayMethod === 'Delete') {
-            let arr = <Array<any>>o[update.property];
-            let i = arr.findIndex(value => value === update.value);
+            const arr = <Array<any>>o[update.property];
+            const i = arr.findIndex(value => value === update.value);
             if (i !== -1) { arr.splice(i, 1); }
             return;
           }

@@ -39,12 +39,6 @@ export interface AtomicTask {
   end?: TimeBoundary;
 }
 
-interface DiffuseTask {
-  taskDuration?: TimeBoundary;
-  pauseDuration?: TimeBoundary;
-  totalDuration?: TimeBoundary;
-}
-
 interface RelativePos {
   timeElapsed?: TimeBoundary; // Can be negative time
   kind: 'before' | 'after';
@@ -54,24 +48,32 @@ interface RelativePos {
 
 interface ProvideQuery {
   priority: number;
-  provideAgent: string;
-  provideTask: number;
+  provideTask: TaskIdentity;
+  higherPriority: TaskIdentity[];
+  handled: boolean;
 }
 
 interface LinkTask {
   offset: TimeBoundary;
-  taskId: number;
+  taskIdentity: TaskIdentity;
+}
+
+export interface TaskIdentity {
+  agentName: string;
+  id: number;
+}
+
+export function taskIdentityToString(t: TaskIdentity): string {
+  return t.agentName + '#' + t.id;
 }
 
 export interface AgentQuery {
-  agentName: string;
-  id: number;
+  taskIdentity: TaskIdentity;
   transform: TaskTransform;
   autoterminate: boolean;
   notifyWhenDone: boolean;
   dontColide: boolean;
-  atomic?: AtomicTask;
-  diffuse?: DiffuseTask;
+  atomic: AtomicTask;
   relativePos?: RelativePos;
   provide?: ProvideQuery;
   linkedTo?: LinkTask[];

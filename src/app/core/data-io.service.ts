@@ -33,11 +33,11 @@ export class DataIOService {
   }
 
   findDocs(colName: string, docDesc: Object, quantity: number): loki.Doc[] {
-    let col = this.loki.getCollection(colName);
+    const col = this.loki.getCollection(colName);
     if (!col) { console.error(`Collection ${colName} not found.`); return []; }
-    let results = col.find(docDesc);
+    const results = col.find(docDesc);
     if (results.length < quantity) {
-      console.warn(`Not enough docs found (${results.length} returned for ${quantity}`, docDesc)
+      console.warn(`Not enough docs found (${results.length} returned for ${quantity}`, docDesc);
       return results;
     }
     return results.slice(0, quantity);
@@ -65,8 +65,16 @@ export class DataIOService {
     this.loki.saveDatabase();
   }
 
+  serializeLoki(): string {
+    return this.loki.serialize();
+  }
+
+  deserializeLoki(serialized: string): void {
+    this.loki.loadJSON(serialized);
+  }
+
   private saveCurrentTasks(tasks: Task[]): void {
-    //Save to ASS
+    // Save to ASS
     console.log('save to ASS:', tasks);
   }
 

@@ -3,11 +3,12 @@ import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import { ConflictHandlerService } from './conflict-handler.service';
+// import { ConflictHandlerService } from './conflict-handler.service';
+import { Timeline } from './timeline/timeline.class';
 import { DataIOService } from '../../core/data-io.service';
 import { AgentService } from './agent.service';
 import { ResourceMapperService } from './resource-mapper.service';
-import { Activities } from './activities.class';
+// import { Activities } from './activities.class';
 import { AgentQuery } from './agent-query.interface';
 import { Task,
          TaskHelper,
@@ -26,7 +27,6 @@ interface TimelineContext { agents: Agent[]; queries?: AgentsQueries; currentTas
 export class ConductorService {
   constructor(private dataIO: DataIOService,
               private delivery: AgentService,
-              private conflictHandler: ConflictHandlerService,
               private resourceMapper: ResourceMapperService,
               @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
               @Inject(timelineState) private tlState: Observable<TimelineState>) {
@@ -77,11 +77,10 @@ export class ConductorService {
       queries, (..._queries: AgentQuery[][]) =>  _queries.reduce((x, y) => x.concat(y)));
     const filledAgentsFeedback = agentsFeedback.withLatestFrom(queriesObs, this.fillAgentsFeedback);
     const currentTasks = timelineContext.currentTasks;
-    const timelineObs: Observable<Activities> = queriesObs.merge(filledAgentsFeedback)
+    const timelineObs: Observable<Timeline> = queriesObs.merge(filledAgentsFeedback)
       .map(_queries => _queries.concat(currentTasks))
-      .map(_queries => new Activities(_queries))
-      .map(this.conflictHandler.tryToResolveConflicts.bind(this.conflictHandler))
-      .do((t: Activities) => agents.forEach(a => a.feedback(t)));
+      .map(_queries => new Timeline(this.resourceMapper, _queries))
+      .do((t: Timeline) => agents.forEach(a => a.feedback(t)));
     this.resourceMapper.updateTimeline(timelineObs
         .filter(t => t.hasNoConflict)
         .map(t => t.toArray())
@@ -92,9 +91,9 @@ export class ConductorService {
 
   private fillAgentsFeedback(feedback: AgentQuery[], queries: AgentQuery[]) {
     const existingAgent: Set<string> = new Set();
-    feedback.forEach(sq => existingAgent.add(sq.agentName));
+    feedback.forEach(sq => existingAgent.add(sq.taskIdentity.agentName));
     queries.forEach(sq => {
-      if (existingAgent.has(sq.agentName)) { return; }
+      if (existingAgent.has(sq.taskIdentity.agentName)) { return; }
       feedback.push(sq);
     });
     return feedback;

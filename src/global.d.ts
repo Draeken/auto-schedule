@@ -15,12 +15,16 @@ declare class loki {
   loadDatabase(options?: Object, callback?: Function): void;
 
   saveDatabase(callback?: Function): void;
+
+  serialize(): string;
+
+  loadJSON(t: string): void;
 }
 
 declare module loki {
 
   interface Doc {
-    $loki: number
+    $loki: number;
   }
 
   class Collection {
