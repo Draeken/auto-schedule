@@ -47,6 +47,7 @@ export class Timeline {
   private minTime = Date.now();
   private maxTime = Date.now() + 3600000 * 24 * 14;
   private optimalPlacement: OptimalPlacement;
+  private areProvidersHandled: Subject<boolean> = new Subject();
 
   constructor(private resourceMapper: ResourceMapperService, private allQueries: AgentQuery[]) {
     this.optimalPlacement = new OptimalPlacement(this.minTime, this.maxTime);
@@ -62,14 +63,15 @@ export class Timeline {
 
   private completeProviders(timeline: Placement[]): void {
     if (timeline.length === 0) { return; }
-    this.resourceMapper.linkProviders(timeline.map(t => t.query), this.allQueries);
-    // behavior.next(providerStatus.linked);
+    this.resourceMapper.handleProviders(timeline.map(t => t.query), this.allQueries);
+    this.areProvidersHandled.next(true);
   }
 
   private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
     return Observable
       .combineLatest(
         this.ObsFromBounds.call(this, query.atomic),
+        this.ObsFromProvider.call(this, query),
         this.mergeToPossiblePlace.bind(this))
       .map(this.createPlacements.bind(this, query));
   }
@@ -242,6 +244,19 @@ export class Timeline {
     };
   }
 
+  private ObsFromProvider(query: AgentQuery): Observable<Marker[]> {
+    if (query.provide === undefined) { return Observable.of([]); }
+    const observables: Observable<Marker>[] = [];
+
+    return this.areProvidersHandled.map(b => {
+      const markers: Marker[] = [];
+      if (!query.provide.handled || query.provide.higherPriority.length !== 0) {
+        markers.push({ id: 'provider', kind: MarkerKind.Both, time: { max: 0, min: 0 } });
+      }
+      return markers;
+    });
+  }
+
   private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
     const observables: Observable<Marker>[] = [];
     const start = atomic.start;
@@ -253,13 +268,6 @@ export class Timeline {
       observables.push(this.handleAtomic(end, MarkerKind.End));
     }
     return Observable.combineLatest(observables).startWith([]);
-  }
-
-  private ObsFromLengthOnly(query: AgentQuery): Observable<Marker[]> {
-    if (query.atomic.start || query.atomic.end || query.linkedTo || query)
-    return this.timeline.map(t => {
-      return [];
-    });
   }
 
   private handleAtomic(t: TimeBoundary, kind: MarkerKind): Observable<Marker> {

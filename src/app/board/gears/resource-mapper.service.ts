@@ -164,6 +164,30 @@ class ProviderLinkerManager implements IProviderManager {
   }
 
   updateProvideSatis(provider: AgentQuery): void {
+    const satisfiedNeeds = this.computeSatisfiedNeeds(provider);
+    if (!satisfiedNeeds.length) {
+      console.warn(`Obsolete provider ${provider}`);
+      // TODO: Obsolete. Ask provider to remove this task
+      return;
+    }
+    const higherPriority: Set<TaskIdentity> = new Set();
+    satisfiedNeeds.forEach(this.handleSatisfiedNeed.bind(this, higherPriority, provider));
+    provider.provide.higherPriority.push(...higherPriority.values());
+    this.clientNeedsAfterProvide = [];
+  }
+
+  private handleSatisfiedNeed(highP: Set<TaskIdentity>, provider: AgentQuery, need: SatisfactionNeed) {
+    const newRecord = { satisfaction: need.satisfaction, providerIdent: provider.taskIdentity };
+    if (!this.satisRecord.has(need.ref)) {
+      this.satisRecord.set(need.ref, [newRecord]);
+      return;
+    }
+    const record = this.satisRecord.get(need.ref);
+    record.map(r => r.providerIdent).forEach(highP.add);
+    record.push(newRecord);
+  }
+
+  private computeSatisfiedNeeds(provider: AgentQuery): SatisfactionNeed[] {
     let incompatibleMark = false;
     const satisfiedNeeds: SatisfactionNeed[] = this.clientNeeds.map(n => ({ satisfaction: 1, quantity: n.quantity, ref: n.ref }));
     this.clientNeedsAfterProvide.forEach(need => {
@@ -184,25 +208,7 @@ class ProviderLinkerManager implements IProviderManager {
     } else {
       this.providerOrder.push(provider);
     }
-    if (!satisfiedNeeds.length) {
-      // TODO: Obsolete. Ask provider to remove this task
-      return;
-    }
-    satisfiedNeeds.forEach(need => {
-      const newRecord = { satisfaction: need.satisfaction, providerIdent: provider.taskIdentity };
-      if (!this.satisRecord.has(need.ref)) {
-        this.satisRecord.set(need.ref, [newRecord]);
-        return;
-      }
-      const record = this.satisRecord.get(need.ref);
-      const wholeSatis = record.map(r => r.satisfaction).reduce((r1, r2) => r1 + r2);
-      if (wholeSatis >= 1) {
-        provider.provide.higherPriority.push(...record.map(r => r.providerIdent));
-      }
-      record.push(newRecord);
-    });
-
-    this.clientNeedsAfterProvide = [];
+    return satisfiedNeeds;
   }
 
   askProviders(): void {}
@@ -233,7 +239,7 @@ export class ResourceMapperService {
       .map(c => c[0]);
   }
 
-  linkProviders(placedQueries: AgentQuery[], allQueries: AgentQuery[]): void {
+  handleProviders(placedQueries: AgentQuery[], allQueries: AgentQuery[]): void {
     const map = this.computeProviderMap(placedQueries, allQueries);
     const dummyPM = new DummyProviderManager();
 
@@ -254,16 +260,32 @@ export class ResourceMapperService {
         this.dataIo.deserializeLoki(serializedState);
         provider.provide.handled = true;
       });
-      const topProviderTask = providerLinker.topProvider.map(q => this.queryToTask(q));
-      this.parseActivities([[...topProviderTask, clientTask], dummyPM]);
+      const topProvider = providerLinker.topProvider;
+      this.linkTopProviders(topProvider);
+      this.parseActivities([[...topProvider.map(q => this.queryToTask(q)), clientTask], dummyPM]);
     });
+  }
+
+  private linkTopProviders(provider: AgentQuery[]): void {
+    let prevProv = provider[0];
+    for (let i = 1; i < provider.length; ++i) {
+      const currProv = provider[i];
+      prevProv.linkedToAll.push({
+        offset: {
+          max: 0,
+          min: -Infinity
+        },
+        taskIdentities: currProv.taskIdentity
+      });
+      prevProv = currProv;
+    }
   }
 
   private computeProviderMap(placedQueries: AgentQuery[], allQueries: AgentQuery[]): Map<number, AgentQuery[]> {
     const map: Map<number, AgentQuery[]> = new Map();
     allQueries.filter(q => q.provide !== undefined && !q.provide.handled).forEach(q => {
-      const clientQueryI = placedQueries.findIndex(cq => cq.taskIdentity.agentName === cq.provide.provideTask.agentName
-        && cq.taskIdentity.id === cq.provide.provideTask.id);
+      const clientQueryI = placedQueries.findIndex(cq => cq.taskIdentity.agentName === q.provide.provideTask.agentName
+        && cq.taskIdentity.id === q.provide.provideTask.id);
       if (clientQueryI === -1) { return; }
       if (!map.has(clientQueryI)) { map.set(clientQueryI, []); }
       map.get(clientQueryI).push(q);

@@ -55,7 +55,7 @@ interface ProvideQuery {
 
 interface LinkTask {
   offset: TimeBoundary;
-  taskIdentity: TaskIdentity;
+  taskIdentities: TaskIdentity;
 }
 
 export interface TaskIdentity {
@@ -76,5 +76,6 @@ export interface AgentQuery {
   atomic: AtomicTask;
   relativePos?: RelativePos;
   provide?: ProvideQuery;
-  linkedTo?: LinkTask[];
+  linkedToOne?: LinkTask[];
+  linkedToAll?: LinkTask[];
 };
