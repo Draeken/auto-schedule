@@ -1,7 +1,6 @@
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
 
-import { TaskStatus, Task }   from '../../board/gears/task.interface';
-import { Activities }   from '../../board/gears/activities.class';
+import { TaskStatus, Task } from '../../board/gears/task.interface';
 
 import { TimelineAction,
          UpdateTimelineAction,
