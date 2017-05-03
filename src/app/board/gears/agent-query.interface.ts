@@ -40,7 +40,7 @@ export interface AtomicTask {
 }
 
 interface RelativePos {
-  timeElapsed?: TimeBoundary; // Can be negative time
+  timeElapsed: TimeBoundary; // Can be negative time
   kind: 'before' | 'after';
   collectionName: string;
   find: Object;
@@ -53,9 +53,10 @@ interface ProvideQuery {
   handled: boolean;
 }
 
-interface LinkTask {
-  offset: TimeBoundary;
-  taskIdentities: TaskIdentity;
+export interface LinkTask {
+  timeElapsed: TimeBoundary;
+  kind: 'before' | 'after';
+  taskIdentity: TaskIdentity;
 }
 
 export interface TaskIdentity {
@@ -65,6 +66,10 @@ export interface TaskIdentity {
 
 export function taskIdentityToString(t: TaskIdentity): string {
   return t.agentName + '#' + t.id;
+}
+
+export function areSameTask(t1: TaskIdentity, t2: TaskIdentity): boolean {
+  return t1.agentName === t2.agentName && t1.id === t2.id;
 }
 
 export interface AgentQuery {

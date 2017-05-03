@@ -271,11 +271,12 @@ export class ResourceMapperService {
     for (let i = 1; i < provider.length; ++i) {
       const currProv = provider[i];
       prevProv.linkedToAll.push({
-        offset: {
+        timeElapsed: {
           max: 0,
           min: -Infinity
         },
-        taskIdentities: currProv.taskIdentity
+        kind: 'before',
+        taskIdentity: currProv.taskIdentity
       });
       prevProv = currProv;
     }

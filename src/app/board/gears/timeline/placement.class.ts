@@ -24,13 +24,14 @@ export class Placement {
   readonly startMarker: Marker;
   readonly endMarker: Marker;
 
-  constructor(start: Marker, end: Marker, query: AgentQuery) {
+  constructor(query: AgentQuery, start: Marker, end: Marker) {
     this.startMarker = start;
     this.endMarker = end;
     this.query = query;
+    this.initPlacement();
   }
 
-  getMarkers(m: MoveKind): Marker {
+  getMarker(m: MoveKind): Marker {
     switch (m) {
       case MoveKind.Start:
         return this.startMarker;
@@ -69,7 +70,7 @@ export class Placement {
   }
 
   clone(): Placement {
-    const p = new Placement(this.startMarker, this.endMarker, this.query);
+    const p = new Placement(this.query, this.startMarker, this.endMarker);
     p._start = this._start;
     p._end = this._end;
     p._startSatis = this._startSatis;
@@ -147,5 +148,40 @@ export class Placement {
   private computeImage(p1: Point, p2: Point, pos: number): number {
     const a = (p2.x - p1.x) / (p2.y - p1.y);
     return (pos - p1.x) * a;
+  }
+
+  private initPlacement(): void {
+    const sMarker = this.startMarker;
+    const eMarker = this.endMarker;
+    if (sMarker.time.target) {
+      this._start = sMarker.time.target;
+    }
+    if (eMarker.time.target) {
+      this._end = sMarker.time.target;
+    }
+    if (this._start === undefined) {
+      this._start = this.query.atomic.duration && this._end ?
+        this._end - this.getBestDuration(this.query.atomic.duration) : this.randomFromMarker(sMarker);
+    }
+    if (this._end === undefined) {
+      this._end = this.query.atomic.duration ?
+        this._start + this.getBestDuration(this.query.atomic.duration) : this.randomFromMarker(eMarker);
+    }
+    if (this._start > this._end) {
+      const start = this._start;
+      this._start = this._end;
+      this._end = start;
+    }
+  }
+
+  private getBestDuration(d: TimeBoundary): number {
+    if (d.target) { return d.target; }
+    if (d.min) { return d.min; }
+    if (d.max) { return d.max; }
+  }
+
+  private randomFromMarker(m: Marker): number {
+    const r = Math.random();
+    return Math.floor(r * (m.time.max - m.time.min) + m.time.min);
   }
 };

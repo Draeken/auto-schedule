@@ -6,7 +6,9 @@ import { Task, TaskStatus } from '../task.interface';
 import { AgentQuery,
          TimeBoundary,
          AtomicTask,
-         TaskTransform } from '../agent-query.interface';
+         TaskTransform,
+         LinkTask,
+         areSameTask } from '../agent-query.interface';
 import { ResourceMapperService } from '../resource-mapper.service';
 import { Placement } from './placement.class';
 import { OptimalPlacement } from './optimal-placement.function';
@@ -47,7 +49,7 @@ export class Timeline {
   private minTime = Date.now();
   private maxTime = Date.now() + 3600000 * 24 * 14;
   private optimalPlacement: OptimalPlacement;
-  private areProvidersHandled: Subject<boolean> = new Subject();
+  private areProvidersHandled: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   constructor(private resourceMapper: ResourceMapperService, private allQueries: AgentQuery[]) {
     this.optimalPlacement = new OptimalPlacement(this.minTime, this.maxTime);
@@ -55,9 +57,11 @@ export class Timeline {
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
     Observable
-      .combineLatest(allQueries.map(this.queriesToPlacements.bind(this)), this.mergeToBestArrangedPlacement)
+      .combineLatest(allQueries.map(this.queriesToPlacements.bind(this)))
+      .debounceTime(0) // Wait all timeline.observer
+      .map(this.mergeToBestArrangedPlacement)
       .map(placements => placements.sort((x, y) => x.end - y.end))
-      .subscribe(placements => this.timeline.next(placements));
+      .subscribe(this.timeline.next);
     this.timeline.subscribe(this.completeProviders);
   }
 
@@ -67,12 +71,16 @@ export class Timeline {
     this.areProvidersHandled.next(true);
   }
 
+  // TODO: use DiscardUntilChange
   private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
     return Observable
       .combineLatest(
         this.ObsFromBounds.call(this, query.atomic),
         this.ObsFromProvider.call(this, query),
+        this.ObsFromLinkedToOne.call(this, query.linkedToOne),
+        this.ObsFromLinkedToAll.call(this, query.linkedToAll),
         this.mergeToPossiblePlace.bind(this))
+      .debounceTime(0)
       .map(this.createPlacements.bind(this, query));
   }
 
@@ -112,7 +120,7 @@ export class Timeline {
     const placements: Placement[] = [];
     pos.start.forEach(start => {
       pos.end.forEach(end => {
-        placements.push(new Placement(start, end, query));
+        placements.push(new Placement(query, start, end));
       });
     });
 
@@ -120,19 +128,8 @@ export class Timeline {
   }
 
   private mergeToPossiblePlace(...markersArr: Marker[][]): PossiblePos {
-    const starters = markersArr.map(markers => {
-      markers.map(m => m.used = false);
-      return markers.filter(m => m.kind === MarkerKind.Start || m.kind === MarkerKind.Both)
-             .sort((a, b) => a.time.min - b.time.min);
-      });
-    const eligibleStarters = this.mergeMarkers(starters, MarkerKind.Start);
-
-    const enders = markersArr.map(markers => {
-      markers.map(m => m.used = false);
-      return markers.filter(m => m.kind === MarkerKind.End || m.kind === MarkerKind.Both)
-             .sort((a, b) => a.time.max - b.time.max);
-      });
-    const eligibleEnders = this.mergeMarkers(starters, MarkerKind.End);
+    const eligibleStarters = this.mergeMarkers(markersArr, MarkerKind.Start);
+    const eligibleEnders = this.mergeMarkers(markersArr, MarkerKind.End);
 
     return {
       start: eligibleStarters,
@@ -141,16 +138,23 @@ export class Timeline {
   }
 
   private mergeMarkers(markersArr: Marker[][], kind: MarkerKind): Marker[] {
+    const sort = kind === MarkerKind.Start ? 'min' : 'max';
+    const markersArrFilt = markersArr.map(markers => {
+      const markersFilt = markers.filter(m => m.kind === kind || m.kind === MarkerKind.Both)
+             .sort((a, b) => a.time[sort] - b.time[sort]);
+      markersFilt.forEach(m => m.used = false);
+      return markersFilt;
+    });
     const eligibles: Marker[] = [];
-    let nextMarker = this.findNextMarker(markersArr);
+    let nextMarker = this.findNextMarker(markersArrFilt);
     while (nextMarker) {
-      const baseMarker = markersArr[nextMarker.markersArrI][nextMarker.markersI];
+      const baseMarker = markersArrFilt[nextMarker.markersArrI][nextMarker.markersI];
       const reduced = this.cloneMarker(baseMarker, kind);
       baseMarker.used = true;
       let eligibleMarker = true;
-      for (let i = 1; i < markersArr.length; ++i) {
-        const i_ = (i + nextMarker.markersArrI) % markersArr.length;
-        const marker = this.findIntersectedMarker(reduced, markersArr[i_]);
+      for (let i = 1; i < markersArrFilt.length; ++i) {
+        const i_ = (i + nextMarker.markersArrI) % markersArrFilt.length;
+        const marker = this.findIntersectedMarker(reduced, markersArrFilt[i_]);
         if (!marker) {
           eligibleMarker = false;
           continue;
@@ -164,7 +168,7 @@ export class Timeline {
       if (eligibleMarker) {
         eligibles.push(reduced);
       }
-      nextMarker = this.findNextMarker(markersArr);
+      nextMarker = this.findNextMarker(markersArrFilt);
     }
     return eligibles;
   }
@@ -257,23 +261,79 @@ export class Timeline {
     });
   }
 
-  private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
-    const observables: Observable<Marker>[] = [];
-    const start = atomic.start;
-    const end = atomic.start;
-    if (start) {
-      observables.push(this.handleAtomic(start, MarkerKind.Start));
-    }
-    if (end) {
-      observables.push(this.handleAtomic(end, MarkerKind.End));
-    }
-    return Observable.combineLatest(observables).startWith([]);
+  private ObsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
+    return this.ObsFromLinkedToOne(toAll).map(markers => {
+      return this.mergeMarkers(
+        markers.map(m => [m]), MarkerKind.Start
+      ).concat(
+        this.mergeMarkers(
+          markers.map(m => [m]), MarkerKind.End)
+      );
+    });
   }
 
-  private handleAtomic(t: TimeBoundary, kind: MarkerKind): Observable<Marker> {
+  private ObsFromLinkedToOne(toOne: LinkTask[]): Observable<Marker[]> {
+    if (!toOne.length) { return Observable.of([]); }
+    return this.timeline.map(t => {
+      return toOne.map(link => {
+        const target = t.find(areSameTask.bind(this, link.taskIdentity));
+        if (!target) { return []; }
+        const baseT = link.kind === 'after' ? target.start : target.end;
+        const startM: Marker = {
+          id: 'linkToOne',
+          kind: MarkerKind.Start,
+          time: {
+            min: baseT + link.timeElapsed.min < link.timeElapsed.max ? link.timeElapsed.min : link.timeElapsed.max,
+            max: baseT + link.timeElapsed.max > link.timeElapsed.min ? link.timeElapsed.max : link.timeElapsed.min,
+            target: link.timeElapsed.target ? baseT + link.timeElapsed.target : undefined
+          }
+        };
+        const endM: Marker = {
+          id: 'linkToOne',
+          kind: MarkerKind.End,
+          time: {
+            min: startM.time.min,
+            max: this.maxTime
+          }
+        };
+        return [startM, endM];
+      }).reduce((acc, v) => acc.concat(v), []);
+    });
+  }
+
+  private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
+    const markers: Marker[] = [];
+    const start = atomic.start;
+    const end = atomic.start;
+
+    markers.concat(this.handleAtomicKind(start, end, MarkerKind.Start));
+    markers.concat(this.handleAtomicKind(start, end, MarkerKind.End));
+
+    return Observable.of(markers);
+  }
+
+  private handleAtomicKind(start: TimeBoundary, end: TimeBoundary, kind: MarkerKind): Marker[] {
+    const markers: Marker[] = [];
+    const tb1 = kind === MarkerKind.Start ? start : end;
+    const tb2 = kind === MarkerKind.Start ? end : start;
+    if (tb1) {
+      markers.push(this.handleAtomic(tb1, kind));
+      if (!tb2) {
+        const m = markers[0];
+        const opositeKind = kind === MarkerKind.Start ? MarkerKind.End : MarkerKind.Start;
+        const min = kind === MarkerKind.Start ? m.time.min : this.minTime;
+        const max = kind === MarkerKind.Start ? this.maxTime : m.time.max;
+        const opMarker: Marker = { id: 'atomic', kind: opositeKind, time: { min: min, max: max } };
+        markers.push(opMarker);
+      }
+    }
+    return markers;
+  }
+
+  private handleAtomic(t: TimeBoundary, kind: MarkerKind): Marker {
     const min = t.min ? t.min : (t.target ? t.target : this.minTime);
     const max = t.max ? t.max : (t.target ? t.target : this.maxTime);
     const marker: Marker = { id: 'atomic', kind: kind, time: { min: min, max: max, target: t.target } };
-    return Observable.of(marker);
+    return marker;
   }
 }

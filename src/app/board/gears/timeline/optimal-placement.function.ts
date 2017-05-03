@@ -152,7 +152,7 @@ interface Bound {
 }
 
 interface MoveCheck {
-  kinds: MoveKind[];
+  kinds?: MoveKind[];
   directions: number[];
 }
 
@@ -220,30 +220,91 @@ class Neighborhood {
 
   private createEntry(placement: Placement): void {
     const moves: MoveInfo[][] = [];
-    moves.push(...this.buildMove([MoveKind.Start], placement, [-1, 1]));
-    moves.push(...this.buildMove([MoveKind.End], placement, [-1, 1]));
-    moves.push(...this.buildMove([MoveKind.Start, MoveKind.End], placement, [-1, 1]));
+    moves.push(...this.buildOneKindMove(MoveKind.Start, placement, [-1, 1]));
+    moves.push(...this.buildOneKindMove(MoveKind.End, placement, [-1, 1]));
+    moves.push(...this.buildTwoKindMove(placement, [-1, 1]));
     this.moveMap.set(placement, moves);
   }
 
-  private buildMove(kinds: MoveKind[], placement: Placement, direction: number[]): MoveInfo[][] {
-    const division = 5;
-    const boundsArr: Bound[][] = kinds.map(kind => {
-      return (m =>
-      m.time.target ? [{ start: m.time.min, end: m.time.target }, { start: m.time.target, end: m.time.max }]
-        : [{ start: m.time.min, end: m.time.max }]).call(this, placement.getMarkers(kind));
+  private buildTwoKindMove(placement: Placement, direction: number[]): MoveInfo[][] {
+    const timelineHoles = this.getTimelineHolesFromPlacement(placement);
+    const currentHoleI = timelineHoles.findIndex(hole => placement.start >= hole.start && placement.end <= hole.end);
+    const currentHole = timelineHoles[currentHoleI];
+    const timeShift = (currentHole.end - currentHole.start) / 10;
+    return direction.map(d => {
+      let sVal = placement.start + timeShift * d;
+      let eVal = placement.end + timeShift * d;
+      if ((sVal < currentHole.start && currentHoleI > 0) || (eVal > currentHole.end && currentHoleI < timelineHoles.length)) {
+        const newDestBound = d < 0 ? timelineHoles[currentHoleI - 1].end : timelineHoles[currentHoleI + 1].start;
+        const placementLength = placement.end - placement.start;
+        sVal = d < 0 ? newDestBound - placementLength : newDestBound;
+        eVal = d < 0 ? newDestBound : newDestBound + placementLength;
+      }
+      return this.simulateMove(placement, [MoveKind.Start, MoveKind.End], [sVal, eVal]);
     });
-    const positionArr = kinds.map(kind => placement.getPosition(kind));
+  }
+
+  private getTimelineHolesFromPlacement(placement: Placement): Bound[] {
+    const range = this.computeMoveBound(placement);
+    const minimalTime = placement.end - placement.start;
+    const allPlacements = this.allPlacements.filter(p => p !== placement);
+    const bounds: Bound[] = [];
+    let i = 0;
+    for (; i < allPlacements.length; ++i) {
+      if (allPlacements[i].end > range.start) { break; }
+    }
+    let startBound = range.start;
+    if (allPlacements[i].end >= range.end) {
+      return [];
+    }
+    startBound = allPlacements[i].end;
+    for (; i < allPlacements.length; ++i) {
+      if (allPlacements[i].start >= range.end) { break; }
+      const currentP = allPlacements[i];
+      const cStart = currentP.start;
+      const cEnd = currentP.end;
+      if (cStart - startBound >= minimalTime) {
+        bounds.push({
+          start: startBound,
+          end: cStart
+        });
+      }
+      startBound = cEnd;
+    }
+    if (startBound < range.end) {
+      bounds.push({
+        start: startBound,
+        end: range.end
+      });
+    }
+
+    return bounds;
+  }
+
+  private computeMoveBound(placement: Placement): Bound {
+    const startM = placement.startMarker;
+    const endM = placement.endMarker;
+    const length = placement.end - placement.start;
+    const startB = Math.max(startM.time.min, endM.time.min - length);
+    const endB = Math.min(endM.time.max, startM.time.max + length);
+    return {
+      start: startB,
+      end: endB
+    };
+  }
+
+  private buildOneKindMove(kind: MoveKind, placement: Placement, direction: number[]): MoveInfo[][] {
+    const division = 5;
+    const m = placement.getMarker(kind);
+    const bounds: Bound[] =  m.time.target ? [{ start: m.time.min, end: m.time.target }, { start: m.time.target, end: m.time.max }]
+        : [{ start: m.time.min, end: m.time.max }];
+    const position = placement.getPosition(kind);
 
     return direction.map(d => {
-      const values = kinds.map((kind, i) => {
-        const position = positionArr[i];
-        const bounds = boundsArr[i];
-        const bound = bounds.reduce((b1, b2) => b1.start <= position + d &&  d + position <= b1.end ? b1 : b2);
-        const newPos = position + ((bound.end - bound.start) / division) * d;
-        return this.clampTarget(newPos, bound.start, bound.end);
-      });
-      return this.simulateMove(placement, kinds, values);
+      const bound = bounds.reduce((b1, b2) => b1.start <= position + d &&  d + position <= b1.end ? b1 : b2);
+      const newPos = position + ((bound.end - bound.start) / division) * d;
+      const value = this.clampTarget(newPos, bound.start, bound.end);
+      return this.simulateMove(placement, [kind], [value]);
     });
   }
 
@@ -302,7 +363,8 @@ class Neighborhood {
       const dirs = moveCheck.directions;
       const kinds = moveCheck.kinds;
       if (!dirs.length) { return; }
-      existingMoves.push(...this.buildMove(kinds, placement, dirs));
+      const moves = kinds.length === 1 ? this.buildOneKindMove(kinds[0], placement, dirs) : this.buildTwoKindMove(placement, dirs);
+      existingMoves.push(...moves);
     });
   }
 }
