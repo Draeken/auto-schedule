@@ -123,7 +123,7 @@ export class OptimalPlacement {
 
     for (let i = 1; i < placements.length; ++i) {
       const current = placements[i];
-      if (past.end > current.start && !past.query.dontColide && !current.query.dontColide) {
+      if (past.end > current.start && !past.query.dontColide && !current.query.dontColide && !belongsToGroup(past.query, current.query)) {
         const startBoundary = i === 1 ? this.minTime : placements[i - 2].end;
         const endBoundary = i === placements.length - 1 ? this.maxTime : placements[i + 1].start;
         return {
@@ -154,6 +154,20 @@ interface Bound {
 interface MoveCheck {
   kinds?: MoveKind[];
   directions: number[];
+}
+
+function belongsToGroup(q1: AgentQuery, q2: AgentQuery): boolean {
+  if (!q1.group && !q2.group) { return false; }
+  let belongsTo = false;
+  if (q1.group) {
+    const member = q1.group.members.find(m => m === q2.taskIdentity.id);
+    if (member) { belongsTo = true; }
+  }
+  if (q2.group) {
+    const member = q2.group.members.find(m => m === q1.taskIdentity.id);
+    if (member) { belongsTo = true; }
+  }
+  return belongsTo;
 }
 
 class Neighborhood {
@@ -330,7 +344,7 @@ class Neighborhood {
   }
 
   private checkColision(pTest: Placement, pCloned: Placement, pOri: Placement): [Placement, MoveKind, number] {
-    if (pTest === pOri || pTest.query.dontColide) { return; }
+    if (pTest === pOri || pTest.query.dontColide || belongsToGroup(pTest.query, pOri.query)) { return; }
     const isInside = pTest.start >= pCloned.start && pTest.end <= pCloned.end;
     if ((pTest.start <= pCloned.start && pTest.end > pCloned.start) || (isInside && pTest.end <= pOri.start)) {
       const value = -1 * (pTest.end - pCloned.start);

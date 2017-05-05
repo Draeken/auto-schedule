@@ -46,11 +46,12 @@ interface RelativePos {
   find: Object;
 }
 
-interface ProvideQuery {
+export interface ProvideQuery {
   priority: number;
   provideTask: TaskIdentity;
   higherPriority: TaskIdentity[];
   handled: boolean;
+  constraints: LinkTask[];
 }
 
 export interface LinkTask {
@@ -72,6 +73,12 @@ export function areSameTask(t1: TaskIdentity, t2: TaskIdentity): boolean {
   return t1.agentName === t2.agentName && t1.id === t2.id;
 }
 
+export interface Group {
+  name: string;
+  constraints: LinkTask[];
+  members: number[];
+}
+
 export interface AgentQuery {
   taskIdentity: TaskIdentity;
   transform: TaskTransform;
@@ -83,4 +90,6 @@ export interface AgentQuery {
   provide?: ProvideQuery;
   linkedToOne?: LinkTask[];
   linkedToAll?: LinkTask[];
+  belongsTo?: string;
+  group?: Group;
 };

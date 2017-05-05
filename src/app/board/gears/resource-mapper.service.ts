@@ -270,7 +270,7 @@ export class ResourceMapperService {
     let prevProv = provider[0];
     for (let i = 1; i < provider.length; ++i) {
       const currProv = provider[i];
-      prevProv.linkedToAll.push({
+      prevProv.provide.constraints.push({
         timeElapsed: {
           max: 0,
           min: -Infinity

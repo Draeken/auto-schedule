@@ -8,6 +8,7 @@ import { AgentQuery,
          AtomicTask,
          TaskTransform,
          LinkTask,
+         ProvideQuery,
          areSameTask } from '../agent-query.interface';
 import { ResourceMapperService } from '../resource-mapper.service';
 import { Placement } from './placement.class';
@@ -57,17 +58,61 @@ export class Timeline {
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
     Observable
-      .combineLatest(allQueries.map(this.queriesToPlacements.bind(this)))
+      .combineLatest(allQueries
+        .map(this.preprocessingGroup.bind(this))
+        .map(this.queriesToPlacements.bind(this)))
       .debounceTime(0) // Wait all timeline.observer
       .map(this.mergeToBestArrangedPlacement)
       .map(placements => placements.sort((x, y) => x.end - y.end))
       .subscribe(this.timeline.next);
-    this.timeline.subscribe(this.completeProviders);
+    this.timeline.subscribe(this.completeProvidersAndGroups);
   }
 
-  private completeProviders(timeline: Placement[]): void {
+  private preprocessingGroup(queries: AgentQuery[]): AgentQuery[] {
+    const mapGroup: Map<string, AgentQuery[]> = new Map();
+    queries.forEach(q => {
+      if (!q.belongsTo || (q.provide && (!q.provide.handled || q.provide.higherPriority.length > 0))) { return; }
+      const key = `${q.taskIdentity.agentName}:${q.belongsTo}`;
+      if (!mapGroup.has(key)) { mapGroup.set(key, []); }
+      mapGroup.get(key).push(q);
+    });
+    if (mapGroup.size === 0) { return queries; }
+    const groupsToHandle = queries.filter(q => q.group.name);
+    while (groupsToHandle.length) {
+      const group = groupsToHandle.shift();
+      const members = mapGroup.get(`${group.taskIdentity.agentName}:${group.group.name}`);
+      if (!members) { continue; }
+      group.atomic.duration = { min: 0, max: 0, target: 0 };
+      group.group.constraints = [];
+      group.group.members = [];
+      if (!members.every(m => {
+        const dur = m.atomic.duration;
+        if (m.group !== undefined && dur.max + dur.min + dur.target === 0) { return false; }
+        this.setGroupProperty(group, m);
+        return true;
+      })) {
+        groupsToHandle.push(group);
+      }
+    }
+  }
+
+  private setGroupProperty(group: AgentQuery, m: AgentQuery): void {
+    const gd = group.atomic.duration;
+    const md = m.atomic.duration;
+    gd.max += md.max;
+    gd.min += md.min;
+    gd.target += md.target;
+    group.group.constraints.push(...m.linkedToAll);
+    group.group.members.push(m.taskIdentity.id);
+    if (m.group !== undefined) {
+      group.group.members.push(...m.group.members);
+    }
+  }
+
+  private completeProvidersAndGroups(timeline: Placement[]): void {
     if (timeline.length === 0) { return; }
     this.resourceMapper.handleProviders(timeline.map(t => t.query), this.allQueries);
+    this.preprocessingGroup(this.allQueries);
     this.areProvidersHandled.next(true);
   }
 
@@ -76,9 +121,10 @@ export class Timeline {
     return Observable
       .combineLatest(
         this.ObsFromBounds.call(this, query.atomic),
-        this.ObsFromProvider.call(this, query),
+        this.ObsFromProvider.call(this, query.provide),
         this.ObsFromLinkedToOne.call(this, query.linkedToOne),
         this.ObsFromLinkedToAll.call(this, query.linkedToAll),
+        this.ObsFromGroup.call(this, query),
         this.mergeToPossiblePlace.bind(this))
       .debounceTime(0)
       .map(this.createPlacements.bind(this, query));
@@ -248,17 +294,32 @@ export class Timeline {
     };
   }
 
-  private ObsFromProvider(query: AgentQuery): Observable<Marker[]> {
-    if (query.provide === undefined) { return Observable.of([]); }
-    const observables: Observable<Marker>[] = [];
+  private ObsFromProvider(provide: ProvideQuery): Observable<Marker[]> {
+    if (provide === undefined) { return Observable.of([]); }
 
     return this.areProvidersHandled.map(b => {
-      const markers: Marker[] = [];
-      if (!query.provide.handled || query.provide.higherPriority.length !== 0) {
-        markers.push({ id: 'provider', kind: MarkerKind.Both, time: { max: 0, min: 0 } });
+      if (!provide.handled || provide.higherPriority.length !== 0) {
+        return this.ObsOfBanning();
+      } else {
+        return this.ObsFromLinkedToAll(provide.constraints);
       }
-      return markers;
-    });
+    }).switch();
+  }
+
+  private ObsFromGroup(query: AgentQuery): Observable<Marker[]> {
+    if (query.group === undefined) { return Observable.of([]); }
+
+    return this.areProvidersHandled.map(b => {
+      if (!b) {
+        return this.ObsOfBanning();
+      }
+      return this.ObsFromLinkedToAll(query.group.constraints);
+    }).switch();
+  }
+
+  private ObsOfBanning(): Observable<Marker[]> {
+    const marker: Marker = { id: 'ban', kind: MarkerKind.Both, time: { max: 0, min: 0 } };
+    return Observable.of([marker]);
   }
 
   private ObsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
