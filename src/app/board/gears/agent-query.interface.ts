@@ -39,11 +39,12 @@ export interface AtomicTask {
   end?: TimeBoundary;
 }
 
-interface RelativePos {
+export interface RelativePos {
   timeElapsed: TimeBoundary; // Can be negative time
-  kind: 'before' | 'after';
+  kind: 'before' | 'after' | 'while';
   collectionName: string;
   find: Object;
+  quantity: number;
 }
 
 export interface ProvideQuery {

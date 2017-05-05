@@ -15,9 +15,12 @@ import { UpdateObject,
          TaskTransformInsert,
          TaskIdentity,
          taskIdentityToString,
+         RelativePos,
          AgentQuery } from './agent-query.interface';
 import { Agent } from '../agents/agent.abstract';
 import { Permission } from '../agents/permissions.class';
+import { Bound } from './timeline/optimal-placement.function';
+import { Placement } from './timeline/placement.class';
 
 interface Resource {
   docs: loki.Doc[];
@@ -237,6 +240,52 @@ export class ResourceMapperService {
       .do(this.dataIo.resetLoki.bind(this.dataIo))
       .filter(c => c[1])
       .map(c => c[0]);
+  }
+
+  getMatchingArea(timeline: Placement[], query: AgentQuery, min: number, max: number): Bound[] {
+    const serializedState = this.dataIo.serializeLoki();
+    const relativ = query.relativePos;
+    const dummyPM = new DummyProviderManager();
+    const colName = relativ.collectionName;
+    const bounds: Bound[] = [];
+    const minimalTime = query.atomic.duration.min;
+    let start = max;
+
+    if (this.docQuantityMatch(colName, relativ.find, relativ.quantity)) {
+      start = min;
+    }
+    timeline.map(this.placementToTask).forEach(task => {
+      this.parseActivities([[task], dummyPM]);
+      if (!this.docQuantityMatch(colName, relativ.find, relativ.quantity)) {
+        if (task.start - start < minimalTime) { return; }
+        bounds.push({ start: start, end: task.start });
+        start = task.end;
+      }
+    });
+
+    if (max - start >= minimalTime) {
+      bounds.push({ start: start, end: max });
+    }
+
+    this.dataIo.deserializeLoki(serializedState);
+
+    return bounds;
+  }
+
+  placementToTask(placement: Placement): Task {
+    return {
+      start: placement.start,
+      end: placement.end,
+      query: placement.query,
+      status: 0
+    };
+  }
+
+  docQuantityMatch(colName: string, find: Object, quantity: number): boolean {
+    const col = this.dataIo.getCollection(colName);
+    if (!col) { return false; }
+    const docs = col.find(find);
+    return docs.length >= quantity;
   }
 
   handleProviders(placedQueries: AgentQuery[], allQueries: AgentQuery[]): void {

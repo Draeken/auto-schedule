@@ -9,10 +9,12 @@ import { AgentQuery,
          TaskTransform,
          LinkTask,
          ProvideQuery,
+         Group,
+         RelativePos,
          areSameTask } from '../agent-query.interface';
 import { ResourceMapperService } from '../resource-mapper.service';
 import { Placement } from './placement.class';
-import { OptimalPlacement } from './optimal-placement.function';
+import { OptimalPlacement, Bound } from './optimal-placement.function';
 
 export enum MarkerKind {
   Start,
@@ -124,7 +126,8 @@ export class Timeline {
         this.ObsFromProvider.call(this, query.provide),
         this.ObsFromLinkedToOne.call(this, query.linkedToOne),
         this.ObsFromLinkedToAll.call(this, query.linkedToAll),
-        this.ObsFromGroup.call(this, query),
+        this.ObsFromGroup.call(this, query.group),
+        this.ObsFromRelative.call(this, query.relativePos),
         this.mergeToPossiblePlace.bind(this))
       .debounceTime(0)
       .map(this.createPlacements.bind(this, query));
@@ -306,60 +309,88 @@ export class Timeline {
     }).switch();
   }
 
-  private ObsFromGroup(query: AgentQuery): Observable<Marker[]> {
-    if (query.group === undefined) { return Observable.of([]); }
+  private ObsFromGroup(group: Group): Observable<Marker[]> {
+    if (group === undefined) { return Observable.of([]); }
 
     return this.areProvidersHandled.map(b => {
       if (!b) {
         return this.ObsOfBanning();
       }
-      return this.ObsFromLinkedToAll(query.group.constraints);
+      return this.ObsFromLinkedToAll(group.constraints);
     }).switch();
   }
 
-  private ObsOfBanning(): Observable<Marker[]> {
+  private ObsFromRelative(query: AgentQuery): Observable<Marker[]> {
+    const relativ = query.relativePos;
+    if (relativ === undefined) { return Observable.of([]); }
+    return this.timeline.map(t => {
+      const bounds = this.resourceMapper
+        .getMatchingArea(t, query, this.minTime, this.maxTime);
+
+      if (!bounds.length) { return this.markerOfBanning(); }
+
+      return bounds
+        .map(bound => this.getMarkersFromRelative(relativ.kind, relativ.timeElapsed, bound, 'relative'))
+        .reduce((acc, v) => acc.concat(v));
+    });
+  }
+
+  private markerOfBanning(): Marker[] {
     const marker: Marker = { id: 'ban', kind: MarkerKind.Both, time: { max: 0, min: 0 } };
-    return Observable.of([marker]);
+    return [marker];
+  }
+
+  private ObsOfBanning(): Observable<Marker[]> {
+    return Observable.of(this.markerOfBanning());
   }
 
   private ObsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
     return this.ObsFromLinkedToOne(toAll).map(markers => {
-      return this.mergeMarkers(
+      const resultMarkers = this.mergeMarkers(
         markers.map(m => [m]), MarkerKind.Start
       ).concat(
         this.mergeMarkers(
           markers.map(m => [m]), MarkerKind.End)
       );
+      if (!resultMarkers.length) { return this.markerOfBanning(); }
+      return resultMarkers;
     });
   }
 
   private ObsFromLinkedToOne(toOne: LinkTask[]): Observable<Marker[]> {
     if (!toOne.length) { return Observable.of([]); }
     return this.timeline.map(t => {
-      return toOne.map(link => {
+      const markers = toOne.map(link => {
         const target = t.find(areSameTask.bind(this, link.taskIdentity));
         if (!target) { return []; }
-        const baseT = link.kind === 'after' ? target.start : target.end;
-        const startM: Marker = {
-          id: 'linkToOne',
-          kind: MarkerKind.Start,
-          time: {
-            min: baseT + link.timeElapsed.min < link.timeElapsed.max ? link.timeElapsed.min : link.timeElapsed.max,
-            max: baseT + link.timeElapsed.max > link.timeElapsed.min ? link.timeElapsed.max : link.timeElapsed.min,
-            target: link.timeElapsed.target ? baseT + link.timeElapsed.target : undefined
-          }
-        };
-        const endM: Marker = {
-          id: 'linkToOne',
-          kind: MarkerKind.End,
-          time: {
-            min: startM.time.min,
-            max: this.maxTime
-          }
-        };
-        return [startM, endM];
+        return this.getMarkersFromRelative(link.kind, link.timeElapsed, { start: target.start, end: target.end }, 'linkToOne');
       }).reduce((acc, v) => acc.concat(v), []);
+      if (!markers.length) { return this.markerOfBanning(); }
+      return markers;
     });
+  }
+
+  private getMarkersFromRelative(kind: string, timeElapsed: TimeBoundary, target: Bound, markerId: string): Marker[] {
+    const baseT = kind === 'after' ? target.end : target.start;
+    const startM: Marker = {
+    id: markerId,
+      kind: MarkerKind.Start,
+      time: {
+        min: baseT + timeElapsed.min < timeElapsed.max ? timeElapsed.min : timeElapsed.max,
+        max: baseT + timeElapsed.max > timeElapsed.min ? timeElapsed.max : timeElapsed.min,
+        target: timeElapsed.target ? baseT + timeElapsed.target : undefined
+      }
+    };
+    const endMax = kind === 'while' ? target.end : this.maxTime;
+    const endM: Marker = {
+      id: markerId,
+      kind: MarkerKind.End,
+      time: {
+        min: startM.time.min,
+        max: endMax
+      }
+    };
+    return [startM, endM];
   }
 
   private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {

@@ -146,7 +146,7 @@ interface MoveInfo {
   additionalMove: MoveInfo[];
 }
 
-interface Bound {
+export interface Bound {
   start: number;
   end: number;
 }
