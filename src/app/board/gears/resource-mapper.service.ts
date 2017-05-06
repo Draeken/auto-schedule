@@ -232,7 +232,7 @@ export class ResourceMapperService {
     return this.transformCollections;
   }
 
-  updateTimeline(t: Observable<Task[]>): Observable<any> {
+  updateTimeline(t: Observable<Task[]>): Observable<Task[]> {
     return t
       .withLatestFrom(this.delivery.agents)
       .map(c => <[Task[], IProviderManager]>[c[0], new ProviderManager(c[1], this.dataIo)])

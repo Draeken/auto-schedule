@@ -70,6 +70,28 @@ export class Timeline {
     this.timeline.subscribe(this.completeProvidersAndGroups);
   }
 
+  toTask(): Observable<Task[]> {
+    const now = Date.now();
+    return this.obsOfReadyTimeline()
+      .map(timeline => timeline.map(t => ({
+        start: t.start,
+        end: t.end,
+        query: t.query,
+        status: t.start < now ? TaskStatus.Running : TaskStatus.Sleep
+      })));
+  }
+
+  toPlacement(): Observable<Placement[]> {
+    return this.obsOfReadyTimeline();
+  }
+
+  private obsOfReadyTimeline(): Observable<Placement[]> {
+    return this.areProvidersHandled
+      .filter((areHandled) => areHandled && !this.allQueries.some(query => query.provide && !query.provide.handled))
+      .withLatestFrom(this.timeline)
+      .map(args => args[1]);
+  }
+
   private preprocessingGroup(queries: AgentQuery[]): AgentQuery[] {
     const mapGroup: Map<string, AgentQuery[]> = new Map();
     queries.forEach(q => {
@@ -122,12 +144,12 @@ export class Timeline {
   private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
     return Observable
       .combineLatest(
-        this.ObsFromBounds.call(this, query.atomic),
-        this.ObsFromProvider.call(this, query.provide),
-        this.ObsFromLinkedToOne.call(this, query.linkedToOne),
-        this.ObsFromLinkedToAll.call(this, query.linkedToAll),
-        this.ObsFromGroup.call(this, query.group),
-        this.ObsFromRelative.call(this, query.relativePos),
+        this.obsFromBounds.call(this, query.atomic),
+        this.obsFromProvider.call(this, query.provide),
+        this.obsFromLinkedToOne.call(this, query.linkedToOne),
+        this.obsFromLinkedToAll.call(this, query.linkedToAll),
+        this.obsFromGroup.call(this, query.group),
+        this.obsFromRelative.call(this, query.relativePos),
         this.mergeToPossiblePlace.bind(this))
       .debounceTime(0)
       .map(this.createPlacements.bind(this, query));
@@ -297,30 +319,30 @@ export class Timeline {
     };
   }
 
-  private ObsFromProvider(provide: ProvideQuery): Observable<Marker[]> {
+  private obsFromProvider(provide: ProvideQuery): Observable<Marker[]> {
     if (provide === undefined) { return Observable.of([]); }
 
     return this.areProvidersHandled.map(b => {
       if (!provide.handled || provide.higherPriority.length !== 0) {
         return this.ObsOfBanning();
       } else {
-        return this.ObsFromLinkedToAll(provide.constraints);
+        return this.obsFromLinkedToAll(provide.constraints);
       }
     }).switch();
   }
 
-  private ObsFromGroup(group: Group): Observable<Marker[]> {
+  private obsFromGroup(group: Group): Observable<Marker[]> {
     if (group === undefined) { return Observable.of([]); }
 
     return this.areProvidersHandled.map(b => {
       if (!b) {
         return this.ObsOfBanning();
       }
-      return this.ObsFromLinkedToAll(group.constraints);
+      return this.obsFromLinkedToAll(group.constraints);
     }).switch();
   }
 
-  private ObsFromRelative(query: AgentQuery): Observable<Marker[]> {
+  private obsFromRelative(query: AgentQuery): Observable<Marker[]> {
     const relativ = query.relativePos;
     if (relativ === undefined) { return Observable.of([]); }
     return this.timeline.map(t => {
@@ -332,7 +354,7 @@ export class Timeline {
       return bounds
         .map(bound => this.getMarkersFromRelative(relativ.kind, relativ.timeElapsed, bound, 'relative'))
         .reduce((acc, v) => acc.concat(v));
-    });
+    }).distinctUntilChanged(this.distinctMarkers);
   }
 
   private markerOfBanning(): Marker[] {
@@ -344,8 +366,8 @@ export class Timeline {
     return Observable.of(this.markerOfBanning());
   }
 
-  private ObsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
-    return this.ObsFromLinkedToOne(toAll).map(markers => {
+  private obsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
+    return this.obsFromLinkedToOne(toAll, false).map(markers => {
       const resultMarkers = this.mergeMarkers(
         markers.map(m => [m]), MarkerKind.Start
       ).concat(
@@ -357,16 +379,25 @@ export class Timeline {
     });
   }
 
-  private ObsFromLinkedToOne(toOne: LinkTask[]): Observable<Marker[]> {
+  private obsFromLinkedToOne(toOne: LinkTask[], allowNotFoundTarget = true): Observable<Marker[]> {
     if (!toOne.length) { return Observable.of([]); }
     return this.timeline.map(t => {
       const markers = toOne.map(link => {
         const target = t.find(areSameTask.bind(this, link.taskIdentity));
-        if (!target) { return []; }
+        if (!target) { return allowNotFoundTarget ? [] : this.markerOfBanning(); }
         return this.getMarkersFromRelative(link.kind, link.timeElapsed, { start: target.start, end: target.end }, 'linkToOne');
       }).reduce((acc, v) => acc.concat(v), []);
       if (!markers.length) { return this.markerOfBanning(); }
       return markers;
+    }).distinctUntilChanged(this.distinctMarkers);
+  }
+
+  private distinctMarkers(m1: Marker[], m2: Marker[]): boolean {
+    if (m1.length !== m2.length) { return false; }
+    return m1.every((m1i, i) => {
+      const m1t = m1i.time;
+      const m2t = m2[i].time;
+      return (m1t.min === m2t.min && m1t.max === m2t.max && m1t.target === m2t.target);
     });
   }
 
@@ -393,7 +424,7 @@ export class Timeline {
     return [startM, endM];
   }
 
-  private ObsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
+  private obsFromBounds(atomic: AtomicTask): Observable<Marker[]> {
     const markers: Marker[] = [];
     const start = atomic.start;
     const end = atomic.start;

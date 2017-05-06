@@ -2,13 +2,10 @@ import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-
-// import { ConflictHandlerService } from './conflict-handler.service';
 import { Timeline } from './timeline/timeline.class';
 import { DataIOService } from '../../core/data-io.service';
 import { AgentService } from './agent.service';
 import { ResourceMapperService } from './resource-mapper.service';
-// import { Activities } from './activities.class';
 import { AgentQuery } from './agent-query.interface';
 import { Task,
          TaskHelper,
@@ -77,14 +74,13 @@ export class ConductorService {
       queries, (..._queries: AgentQuery[][]) =>  _queries.reduce((x, y) => x.concat(y)));
     const filledAgentsFeedback = agentsFeedback.withLatestFrom(queriesObs, this.fillAgentsFeedback);
     const currentTasks = timelineContext.currentTasks;
-    const timelineObs: Observable<Timeline> = queriesObs.merge(filledAgentsFeedback)
+    queriesObs.merge(filledAgentsFeedback)
       .map(_queries => _queries.concat(currentTasks))
       .map(_queries => new Timeline(this.resourceMapper, _queries))
-      .do((t: Timeline) => agents.forEach(a => a.feedback(t)));
-    this.resourceMapper.updateTimeline(timelineObs
-        .filter(t => t.hasNoConflict)
-        .map(t => t.toArray())
-      ).subscribe(t => this.tlDispatcher.next(new UpdateTimelineAction(t)));
+      .do((t: Timeline) => agents.forEach(a => a.feedback(t)))
+      .map(t => this.resourceMapper.updateTimeline(t.toTask()))
+      .switch()
+      .subscribe(t => this.tlDispatcher.next(new UpdateTimelineAction(t)));
 
     return agents;
   }

@@ -16,7 +16,7 @@ export abstract class Agent {
   protected requests: Subject<AgentQuery[]>;
   protected feedbackObs: BehaviorSubject<AgentQuery[]> = new BehaviorSubject([]);
 
-  constructor(private _service: AgentInfo) {
+  constructor(private _agent: AgentInfo) {
   }
 
   abstract getInfo(taskId: number): string
@@ -39,7 +39,7 @@ export abstract class Agent {
   }
 
   get service(): AgentInfo {
-    return Object.assign({}, this._service);
+    return Object.assign({}, this._agent);
   }
 
   setRequests(requests: Subject<AgentQuery[]>): void {
@@ -47,11 +47,11 @@ export abstract class Agent {
   }
 
   feedback(timeline: Timeline): void {
-    this.requestFeedback(timeline.filter(this._service.name));
+    this.requestFeedback(timeline.toPlacement().map(t => t.filter(p => p.query.taskIdentity.agentName === this._agent.name)).switch());
   }
 
   canProvide(collectionName: string): boolean {
-    const colPerm = this._service.userPermission.collectionsPerm.find(c => c.collectionName === collectionName);
+    const colPerm = this._agent.userPermission.collectionsPerm.find(c => c.collectionName === collectionName);
     return Permissions.getPermissions(colPerm.permission).has(Permission.Provide);
   }
 }
