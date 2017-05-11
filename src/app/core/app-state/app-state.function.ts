@@ -1,13 +1,14 @@
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import { agentHandler }   from './service.actions';
-import { userHandler }      from './user.actions';
-import { AppState }         from './app-state.interface';
-import { AppAction }           from './actions';
+import { agentHandler } from './service.actions';
+import { userHandler } from './user.actions';
+import { AppState } from './app-state.interface';
+import { AppAction } from './actions';
 
 export function stateFn(initState: AppState, actions: Observable<AppAction>): Observable<AppState> {
   const combines = (s: any) => {
-    let appState: AppState = {
+    const appState: AppState = {
       agents: s[0],
       userStates: s[1]
     };

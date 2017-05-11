@@ -1,12 +1,12 @@
 import { UserStates,
-         LoginStatus }    from './user-states.interface';
-import { AppState }       from './app-state.interface';
-import { LocalUserInfo }  from '../../shared/local-user-info.interface';
+         LoginStatus } from './user-states.interface';
+import { AppState } from './app-state.interface';
+import { LocalUserInfo } from '../../shared/local-user-info.interface';
 
-import { AgentInfo }  from '../../board/agents/agent-info.interface';
+import { AgentInfo } from '../../board/agents/agent-info.interface';
 
 function getInitialUserState(): UserStates {
-  let initUserState: UserStates = {
+  const initUserState: UserStates = {
     loggedStatus: LoginStatus.notLogged
   };
   const user: LocalUserInfo = JSON.parse(localStorage.getItem('user'));
@@ -24,11 +24,11 @@ function getInitialServices(): AgentInfo[] {
   return [
     {
       name: 'Custom Task',
-      url: 'localhost:3001/api',
+      url: 'http://localhost:3001/api',
       agentPermission: null,
       userPermission: null
     },
-  ]
+  ];
 }
 
 const initAppStateValue: AppState = {
@@ -37,6 +37,6 @@ const initAppStateValue: AppState = {
 };
 
 export function initAppState(): AppState {
-  let appState: AppState = initAppStateValue;
+  const appState: AppState = initAppStateValue;
   return appState;
 };

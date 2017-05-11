@@ -66,7 +66,7 @@ export class OptimalPlacement {
     periods = periods.filter(p => p !== undefined);
 
     if (!periods.length) {
-      // ask user
+      // TODO: ask user
       console.warn(`Conflict can't be automatically resolved: ${p1}, ${p2}.`);
     }
     const bestLimit = periods
@@ -188,7 +188,7 @@ class Neighborhood {
 
   private findBestAndApply(): void {
     let bestAvgSatis = 0;
-    let bestMove: MoveInfo[];
+    let bestMove: MoveInfo[] = [];
     for (const [_, movesInfos] of this.moveMap) {
       const localBestMove = <[MoveInfo[], number]>movesInfos
         .map((m1) => {
@@ -263,6 +263,14 @@ class Neighborhood {
     const minimalTime = placement.end - placement.start;
     const allPlacements = this.allPlacements.filter(p => p !== placement);
     const bounds: Bound[] = [];
+    if (!allPlacements.length) {
+      return [
+        {
+          start: range.start,
+          end: range.end
+        }
+      ];
+    }
     let i = 0;
     for (; i < allPlacements.length; ++i) {
       if (allPlacements[i].end > range.start) { break; }

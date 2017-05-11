@@ -4,5 +4,5 @@ export enum LoginStatus {
   fullyLogged
 }
 export interface UserStates {
-  loggedStatus: LoginStatus
+  loggedStatus: LoginStatus;
 }

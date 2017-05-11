@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var morgan = require('morgan');
 var bodyParser = require('body-parser');
+var path = require('path');
 
 app.disable('trust proxy');
 app.use(morgan('combined'));
@@ -18,6 +19,9 @@ module.exports = (options) => {
   app.use('/user', require('./users/router.js')());
   app.use('/agent', require('./agents/router.js')());
   app.use('/admin', require('./admin/router.js')());
+
+  app.use(express.static(path.join(__dirname, '../dist')));
+  app.get('/', (req, res) => res.sendFile('index.html', { root: 'dist' }));
 
   app.use((req, res) => res.sendStatus(404));
 

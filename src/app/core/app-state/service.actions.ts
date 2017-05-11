@@ -1,6 +1,6 @@
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
 
-import { AgentInfo }                        from '../../board/agents/agent-info.interface';
+import { AgentInfo } from '../../board/agents/agent-info.interface';
 import { AppAction, ActivateAgentsAction } from './actions';
 
 export function agentHandler(initState: AgentInfo[], actions: Observable<AppAction>): Observable<AgentInfo[]> {

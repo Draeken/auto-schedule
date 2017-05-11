@@ -74,6 +74,7 @@ export class ConductorService {
       queries, (..._queries: AgentQuery[][]) =>  _queries.reduce((x, y) => x.concat(y)));
     const filledAgentsFeedback = agentsFeedback.withLatestFrom(queriesObs, this.fillAgentsFeedback);
     const currentTasks = timelineContext.currentTasks;
+    queriesObs.subscribe(data => console.log('queriesObs', data));
     queriesObs.merge(filledAgentsFeedback)
       .map(_queries => _queries.concat(currentTasks))
       .map(_queries => new Timeline(this.resourceMapper, _queries))

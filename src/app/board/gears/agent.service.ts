@@ -2,6 +2,7 @@ import { Injectable,
          Inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
+import { Http, Headers, RequestOptions, Response } from '@angular/http';
 
 import { AppState} from '../../core/app-state/app-state.interface';
 import { appState } from '../../core/app-state/state-dispatcher.provider';
@@ -31,7 +32,8 @@ export class AgentService {
 
   private services: Observable<AgentInfo[]>;
 
-  constructor(@Inject(appState) private appState: Observable<AppState>,
+  constructor(private http: Http,
+              @Inject(appState) private appState: Observable<AppState>,
               @Inject(timelineState) private tlState: Observable<TimelineState>) {
     this.services = this.appState.pluck('agents').distinctUntilChanged();
 
@@ -39,7 +41,7 @@ export class AgentService {
   }
 
   get agents(): Observable<Agent[]> {
-    return this.services.map((services: AgentInfo[]) => services.map(s => new AgentOnline(s)));
+    return this.services.map((services: AgentInfo[]) => services.map(s => new AgentOnline(this.http, s)));
   }
 
   registerTransformColl(mapObs: Observable<Map<string, TransformResult>>): void {

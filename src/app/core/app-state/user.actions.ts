@@ -1,8 +1,8 @@
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
 
-import { UserStates }               from './user-states.interface';
+import { UserStates } from './user-states.interface';
 import { AppAction,
-         UpdateLoginStatusAction }  from './actions';
+         UpdateLoginStatusAction } from './actions';
 
 export function userHandler(initState: UserStates, actions: Observable<AppAction>): Observable<UserStates> {
   return <Observable<UserStates>>actions.scan((state: UserStates, action: AppAction) => {
@@ -16,7 +16,7 @@ export function userHandler(initState: UserStates, actions: Observable<AppAction
 
 
 function changeLoginStatus(state: UserStates, action: UpdateLoginStatusAction): UserStates {
-  let newState: UserStates = Object.assign({}, state);
+  const newState: UserStates = Object.assign({}, state);
   newState.loggedStatus = action.status;
   return newState;
 }

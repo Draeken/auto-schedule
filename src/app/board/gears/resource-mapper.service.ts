@@ -238,7 +238,7 @@ export class ResourceMapperService {
       .map(c => <[Task[], IProviderManager]>[c[0], new ProviderManager(c[1], this.dataIo)])
       .map(this.parseActivities)
       .do(this.dataIo.resetLoki.bind(this.dataIo))
-      .filter(c => c[1])
+      //.filter(c => c[1])
       .map(c => c[0]);
   }
 

@@ -60,14 +60,15 @@ export class Timeline {
       { time: { min: this.minTime, max: this.maxTime }, id: 'timeline', kind: MarkerKind.Both }
     ]);
     Observable
-      .combineLatest(allQueries
-        .map(this.preprocessingGroup.bind(this))
+      .combineLatest(
+        this.preprocessingGroup(allQueries)
         .map(this.queriesToPlacements.bind(this)))
       .debounceTime(0) // Wait all timeline.observer
-      .map(this.mergeToBestArrangedPlacement)
-      .map(placements => placements.sort((x, y) => x.end - y.end))
-      .subscribe(this.timeline.next);
-    this.timeline.subscribe(this.completeProvidersAndGroups);
+      .filter((ps: Placement[][]) => ps.length > 1 || ps[0].length > 0)
+      .map(this.mergeToBestArrangedPlacement.bind(this))
+      .map((placements: Placement[]) => placements.sort((x, y) => x.end - y.end))
+      .subscribe(this.handleBestPlacements.bind(this));
+    this.timeline.subscribe(this.completeProvidersAndGroups.bind(this));
   }
 
   toTask(): Observable<Task[]> {
@@ -83,6 +84,10 @@ export class Timeline {
 
   toPlacement(): Observable<Placement[]> {
     return this.obsOfReadyTimeline();
+  }
+
+  private handleBestPlacements(placements: Placement[]): void {
+    this.timeline.next(placements);
   }
 
   private obsOfReadyTimeline(): Observable<Placement[]> {
@@ -144,19 +149,20 @@ export class Timeline {
   private queriesToPlacements(query: AgentQuery): Observable<Placement[]> {
     return Observable
       .combineLatest(
+        this.timelineMarkers,
         this.obsFromBounds.call(this, query.atomic),
         this.obsFromProvider.call(this, query.provide),
         this.obsFromLinkedToOne.call(this, query.linkedToOne),
         this.obsFromLinkedToAll.call(this, query.linkedToAll),
         this.obsFromGroup.call(this, query.group),
-        this.obsFromRelative.call(this, query.relativePos),
+        this.obsFromRelative.call(this, query),
         this.mergeToPossiblePlace.bind(this))
       .debounceTime(0)
       .map(this.createPlacements.bind(this, query));
   }
 
   private mergeToBestArrangedPlacement(placementsArr: Placement[][]): Placement[] {
-    placementsArr.forEach(placements => placements.forEach(this.handleNewPlacement));
+    placementsArr.forEach(placements => placements.forEach(this.handleNewPlacement, this));
     let bestSatis = this.pickBestAndSort(placementsArr);
 
     while (true) {
@@ -172,7 +178,7 @@ export class Timeline {
 
   private pickBestAndSort(placementsArr: Placement[][]): Placement[] {
     return placementsArr
-            .map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2))
+            .map(plcmts => plcmts.reduce((p1, p2) => p1.satisfaction > p2.satisfaction ? p1 : p2, plcmts[0]))
             .sort((p1, p2) => p2.start - p1.start);
   }
 
@@ -294,6 +300,7 @@ export class Timeline {
 
   private findIntersectedMarker(marker: Marker, markers: Marker[]): Marker {
     const bTime = marker.time;
+    if (!markers.length) { return marker; }
     return markers.find(m => {
       const mTime = m.time;
       return (mTime.min <= bTime.min && mTime.max > bTime.min) ||
@@ -367,6 +374,7 @@ export class Timeline {
   }
 
   private obsFromLinkedToAll(toAll: LinkTask[]): Observable<Marker[]> {
+    if (!toAll || !toAll.length) { return Observable.of([]); }
     return this.obsFromLinkedToOne(toAll, false).map(markers => {
       const resultMarkers = this.mergeMarkers(
         markers.map(m => [m]), MarkerKind.Start
@@ -380,7 +388,7 @@ export class Timeline {
   }
 
   private obsFromLinkedToOne(toOne: LinkTask[], allowNotFoundTarget = true): Observable<Marker[]> {
-    if (!toOne.length) { return Observable.of([]); }
+    if (!toOne || !toOne.length) { return Observable.of([]); }
     return this.timeline.map(t => {
       const markers = toOne.map(link => {
         const target = t.find(areSameTask.bind(this, link.taskIdentity));

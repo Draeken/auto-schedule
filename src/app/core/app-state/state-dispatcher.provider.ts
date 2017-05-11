@@ -1,10 +1,11 @@
-import { OpaqueToken }          from '@angular/core';
-import { Subject, Observable }  from 'rxjs';
+import { OpaqueToken } from '@angular/core';
+import { Subject } from 'rxjs/Subject';
+import { Observable } from 'rxjs/Observable';
 
 import { initAppState } from './init-app-state.function';
-import { stateFn }      from './app-state.function';
-import { AppAction }       from './actions';
-import { AppState }     from './app-state.interface';
+import { stateFn } from './app-state.function';
+import { AppAction } from './actions';
+import { AppState } from './app-state.interface';
 
 export const initState = new OpaqueToken('init.state');
 export const appDispatcher = new OpaqueToken('dispatcher');

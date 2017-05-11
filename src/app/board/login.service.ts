@@ -1,14 +1,15 @@
-import { Injectable, Inject }                       from '@angular/core';
-import { Http, Headers, RequestOptions, Response }  from '@angular/http';
-import { Observable, Observer }                     from 'rxjs';
+import { Injectable, Inject } from '@angular/core';
+import { Http, Headers, RequestOptions, Response } from '@angular/http';
+import { Observable } from 'rxjs/Observable';
+import { Observer } from 'rxjs/Observer';
 
-import { AppState }                 from '../core/app-state/app-state.interface';
+import { AppState } from '../core/app-state/app-state.interface';
 import { AppAction,
-         UpdateLoginStatusAction }  from '../core/app-state/actions';
-import { UserStates, LoginStatus }  from '../core/app-state/user-states.interface';
-import { LocalUserInfo }            from '../shared/local-user-info.interface';
-import { appDispatcher, appState }        from '../core/app-state/state-dispatcher.provider';
-import { DataIOService }            from '../core/data-io.service';
+         UpdateLoginStatusAction } from '../core/app-state/actions';
+import { UserStates, LoginStatus } from '../core/app-state/user-states.interface';
+import { LocalUserInfo } from '../shared/local-user-info.interface';
+import { appDispatcher, appState } from '../core/app-state/state-dispatcher.provider';
+import { DataIOService } from '../core/data-io.service';
 
 
 @Injectable()
@@ -24,7 +25,7 @@ export class LoginService {
               private dataIo: DataIOService) {
     this.state
       .pluck('userStates')
-      .filter((us: UserStates) => us.loggedStatus == LoginStatus.notLogged)
+      .filter((us: UserStates) => us.loggedStatus === LoginStatus.notLogged)
       .distinctUntilChanged()
       .subscribe(this.partialLogin.bind(this));
   }
@@ -45,8 +46,8 @@ export class LoginService {
         password: password,
       }
     };
-    let headers = new Headers({ 'content-type': 'application/json' });
-    let options = new RequestOptions({ headers: headers });
+    const headers = new Headers({ 'content-type': 'application/json' });
+    const options = new RequestOptions({ headers: headers });
 
     this.http.post(this.serverUrl + 'user/login', dataLogin, options)
              .map(this.extractToken)
@@ -57,7 +58,7 @@ export class LoginService {
     let body;
     try {
       body = res.json();
-    } catch(e) {
+    } catch (e) {
       body = undefined;
     }
     return body ? body.token : undefined;

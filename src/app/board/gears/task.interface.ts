@@ -18,8 +18,8 @@ export interface Task {
 export class TaskHelper {
 
   static extractLastDone(tasks: Task[]): Task {
-    for (let i = tasks.length -1; i >= 0; ++i) {
-      if (tasks[i].status === TaskStatus.Done) { return tasks[i] }
+    for (let i = tasks.length - 1; i >= 0; ++i) {
+      if (tasks[i].status === TaskStatus.Done) { return tasks[i]; }
     }
   }
 
@@ -29,12 +29,12 @@ export class TaskHelper {
   }
 
   static extractNext(tasks: Task[]): Task[] {
-    let i = tasks.findIndex(t => t.status == TaskStatus.Sleep);
+    let i = tasks.findIndex(t => t.status === TaskStatus.Sleep);
     if (i === -1) { return []; }
-    let nextTasks = [tasks[i]];
+    const nextTasks = [tasks[i]];
     let nextEnd = nextTasks[0].end;
     do {
-      let nextTask = tasks[++i];
+      const nextTask = tasks[++i];
       if (nextTask.start > nextEnd) { break; }
       nextTasks.push(nextTask);
       nextEnd = Math.min(nextEnd, nextTask.end);
@@ -43,9 +43,9 @@ export class TaskHelper {
   }
 
   static distinct(ta: Task[], tb: Task[]): boolean {
-    let tbCopy = [].concat(tb);
+    const tbCopy = [].concat(tb);
     ta.forEach(t => {
-      let i = tbCopy.findIndex(tp => t === tp);
+      const i = tbCopy.findIndex(tp => t === tp);
       if (i === -1) { return; }
       tbCopy.splice(i, 1);
     });
@@ -53,10 +53,10 @@ export class TaskHelper {
   }
 
   static distinctCurrent(ta: Task[], tb: Task[]): boolean {
-    let tbFiltered = TaskHelper.extractCurrent(tb);
+    const tbFiltered = TaskHelper.extractCurrent(tb);
 
     TaskHelper.extractCurrent(ta).forEach(t => {
-      let i = tbFiltered.findIndex(tp => t === tp);
+      const i = tbFiltered.findIndex(tp => t === tp);
       if (i === -1) { return; }
       tbFiltered.splice(i, 1);
     });

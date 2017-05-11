@@ -125,9 +125,13 @@ export class Placement {
   }
 
   private computeLengthSatisfaction(): number {
-    const duration = this.query.atomic.duration || 1;
-
-    return this.computeImageFromTimeBoundary(duration, this._end - this._start, 1);
+    const duration = this.query.atomic.duration;
+    const length = this._end - this._start;
+    if (!duration) { return this._start <= this._end ? 1 : 0; }
+    if (duration.target === undefined) {
+      return length >= duration.min && length <= duration.max ? 1 : 0;
+    }
+    return this.computeImageFromTimeBoundary(duration, length, 1);
   }
 
   private computeSatisfaction(marker: Marker, pos: number) {
