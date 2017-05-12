@@ -46,8 +46,8 @@ export abstract class Agent {
     this.requests = requests;
   }
 
-  feedback(timeline: Timeline): void {
-    this.requestFeedback(timeline.toPlacement().map(t => t.filter(p => p.query.taskIdentity.agentName === this._agent.name)).switch());
+  feedback(placements: Placement[]): void {
+    this.requestFeedback(placements.filter(p => p.query.taskIdentity.agentName === this._agent.name));
   }
 
   canProvide(collectionName: string): boolean {

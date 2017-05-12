@@ -1,4 +1,4 @@
-import { OpaqueToken } from '@angular/core';
+import { InjectionToken } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 
@@ -7,9 +7,9 @@ import { stateFn } from './app-state.function';
 import { AppAction } from './actions';
 import { AppState } from './app-state.interface';
 
-export const initState = new OpaqueToken('init.state');
-export const appDispatcher = new OpaqueToken('dispatcher');
-export const appState = new OpaqueToken('state');
+export const initState = new InjectionToken<AppState>('init.app.state');
+export const appDispatcher = new InjectionToken<Subject<AppAction>>('app.dispatcher');
+export const appState = new InjectionToken<Observable<AppState>>('app.state');
 
 export function dispatcherSubject() {
   return new Subject<AppAction>();

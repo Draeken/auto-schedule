@@ -1,17 +1,19 @@
-import { OpaqueToken }          from '@angular/core';
-import { Subject, Observable }  from 'rxjs';
+import { InjectionToken } from '@angular/core';
+import { Subject } from 'rxjs/Subject';
+import { Observable } from 'rxjs/Observable';
 
 import { initTimelineState } from './init-timeline-state.function';
-import { stateFn }      from './timeline-state.function';
-import { TimelineAction }       from './actions';
-import { TimelineState }     from './timeline-state.interface';
+import { stateFn } from './timeline-state.function';
+import { TimelineAction } from './actions';
+import { TimelineState } from './timeline-state.interface';
 
-export const initState = new OpaqueToken('init.state');
-export const timelineDispatcher = new OpaqueToken('dispatcher');
-export const timelineState = new OpaqueToken('state');
+export const initState = new InjectionToken<TimelineState>('init.timeline.state');
+export const timelineDispatcher = new InjectionToken<Subject<TimelineAction>>('timeline.dispatcher');
+export const timelineState = new InjectionToken<Observable<TimelineState>>('timeline.state');
 
 export function dispatcherSubject() {
-  return new Subject<TimelineAction>();
+  const s = new Subject<TimelineAction>();
+  return s;
 }
 
 export const timelineStateAndDispatcherProvider = [

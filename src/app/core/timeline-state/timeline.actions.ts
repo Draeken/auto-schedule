@@ -18,5 +18,5 @@ export function timelineHandler(initState: Task[], actions: Observable<TimelineA
 
 
 function updateTimeline(tasks: Task[], action: UpdateTimelineAction): Task[] {
-  return action.timeline;
+  return [...action.timeline];
 }

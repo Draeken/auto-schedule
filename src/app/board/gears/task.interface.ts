@@ -18,7 +18,7 @@ export interface Task {
 export class TaskHelper {
 
   static extractLastDone(tasks: Task[]): Task {
-    for (let i = tasks.length - 1; i >= 0; ++i) {
+    for (let i = tasks.length - 1; i >= 0; --i) {
       if (tasks[i].status === TaskStatus.Done) { return tasks[i]; }
     }
   }
@@ -33,12 +33,12 @@ export class TaskHelper {
     if (i === -1) { return []; }
     const nextTasks = [tasks[i]];
     let nextEnd = nextTasks[0].end;
-    do {
+    while (i + 1 < tasks.length) {
       const nextTask = tasks[++i];
       if (nextTask.start > nextEnd) { break; }
       nextTasks.push(nextTask);
       nextEnd = Math.min(nextEnd, nextTask.end);
-    } while (i < tasks.length);
+    }
     return nextTasks;
   }
 

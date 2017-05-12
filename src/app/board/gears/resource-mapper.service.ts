@@ -232,14 +232,10 @@ export class ResourceMapperService {
     return this.transformCollections;
   }
 
-  updateTimeline(t: Observable<Task[]>): Observable<Task[]> {
-    return t
-      .withLatestFrom(this.delivery.agents)
-      .map(c => <[Task[], IProviderManager]>[c[0], new ProviderManager(c[1], this.dataIo)])
-      .map(this.parseActivities)
-      .do(this.dataIo.resetLoki.bind(this.dataIo))
-      //.filter(c => c[1])
-      .map(c => c[0]);
+  updateTimeline(t: Task[], agents: Agent[]): Task[] {
+    const isValid = this.parseActivities(t, new ProviderManager(agents, this.dataIo));
+    this.dataIo.resetLoki();
+    return isValid ? t : undefined;
   }
 
   getMatchingArea(timeline: Placement[], query: AgentQuery, min: number, max: number): Bound[] {
@@ -255,7 +251,7 @@ export class ResourceMapperService {
       start = min;
     }
     timeline.map(this.placementToTask).forEach(task => {
-      this.parseActivities([[task], dummyPM]);
+      this.parseActivities([task], dummyPM);
       if (!this.docQuantityMatch(colName, relativ.find, relativ.quantity)) {
         if (task.start - start < minimalTime) { return; }
         bounds.push({ start: start, end: task.start });
@@ -295,23 +291,23 @@ export class ResourceMapperService {
     placedQueries.forEach((clientQuery, i) => {
       const clientTask = this.queryToTask(clientQuery, 1);
       if (!map.has(i)) {
-        this.parseActivities([[clientTask], dummyPM]);
+        this.parseActivities([clientTask], dummyPM);
         return;
       }
       const providerLinker = new ProviderLinkerManager(this.dataIo);
       const serializedState = this.dataIo.serializeLoki();
 
-      this.parseActivities([[clientTask], providerLinker]);
+      this.parseActivities([clientTask], providerLinker);
       this.dataIo.deserializeLoki(serializedState);
       map.get(i).sort((p1, p2) => p2.provide.priority - p1.provide.priority).forEach(provider => {
-        this.parseActivities([[this.queryToTask(provider), clientTask], providerLinker]);
+        this.parseActivities([this.queryToTask(provider), clientTask], providerLinker);
         providerLinker.updateProvideSatis(provider);
         this.dataIo.deserializeLoki(serializedState);
         provider.provide.handled = true;
       });
       const topProvider = providerLinker.topProvider;
       this.linkTopProviders(topProvider);
-      this.parseActivities([[...topProvider.map(q => this.queryToTask(q)), clientTask], dummyPM]);
+      this.parseActivities([...topProvider.map(q => this.queryToTask(q)), clientTask], dummyPM);
     });
   }
 
@@ -361,7 +357,7 @@ export class ResourceMapperService {
       .map(this.transToColl.bind(this));
 
     this.delivery.registerTransformColl(this.transformCollObs);
-    this.transformCollections.subscribe(this.updateUserState.bind(this));
+    this.transformCollections.subscribe(this.updateUserState.bind(this), v => console.error('error:', v));
   }
 
   private updateUserState(map: Map<string, TransformResult>): void {
@@ -425,10 +421,7 @@ export class ResourceMapperService {
     return map;
   }
 
-  private parseActivities(c: [Task[], IProviderManager]): [Task[], boolean] {
-    const tasks = c[0];
-    const providerManager = c[1];
-
+  private parseActivities(tasks: Task[], providerManager: IProviderManager): boolean {
     tasks.forEach(task => {
       const resources: Resource[] = [];
       const transform = task.query.transform;
@@ -443,7 +436,7 @@ export class ResourceMapperService {
       });
     });
     providerManager.askProviders();
-    return [tasks, providerManager.isValid()];
+    return providerManager.isValid();
   }
 
   private handleNeeds(resources: Resource[], providerManager: IProviderManager, need: TaskTransformNeed) {

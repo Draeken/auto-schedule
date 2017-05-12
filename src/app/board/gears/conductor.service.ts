@@ -28,7 +28,7 @@ export class ConductorService {
               @Inject(timelineDispatcher) private tlDispatcher: Observer<TimelineAction>,
               @Inject(timelineState) private tlState: Observable<TimelineState>) {
     this.handleAgentsChange(this.delivery.agents);
-    this.handleTimelineChange(this.tlState.pluck('timeline'));
+    this.handleTimelineChange(this.tlState.map(t => t.timeline));
   }
 
   private handleAgentsChange(agents: Observable<Agent[]>) {
@@ -42,12 +42,12 @@ export class ConductorService {
   private handleTimelineChange(timeline: Observable<Task[]>) {
     timeline
       .switchMap(this.setTimerForNextTasks)
-      .subscribe(this.handleStartedTask);
+      .subscribe(this.handleStartedTask, v => console.error('error:', v));
     timeline
       .map(TaskHelper.extractCurrent)
       .distinctUntilChanged(TaskHelper.distinct)
       .switchMap(this.setTimerForCurrentTasks)
-      .subscribe(this.handleTimedTask);
+      .subscribe(this.handleTimedTask, v => console.error('error:', v));
   }
 
   private createTimelineContext(timelineContext: TimelineContext): TimelineContext {
@@ -78,10 +78,18 @@ export class ConductorService {
     queriesObs.merge(filledAgentsFeedback)
       .map(_queries => _queries.concat(currentTasks))
       .map(_queries => new Timeline(this.resourceMapper, _queries))
-      .do((t: Timeline) => agents.forEach(a => a.feedback(t)))
-      .map(t => this.resourceMapper.updateTimeline(t.toTask()))
+      .map((t: Timeline) => t.toPlacement())
       .switch()
-      .subscribe(t => this.tlDispatcher.next(new UpdateTimelineAction(t)));
+      .do(p => agents.forEach(a => a.feedback(p)))
+      .map(placements => placements.map(p => {
+        const now = Date.now();
+        const t: Task = { start: p.start, end: p.end, query: p.query, status: p.start < now ? TaskStatus.Running : TaskStatus.Sleep };
+        return t;
+      }))
+      .withLatestFrom(this.delivery.agents)
+      .map(pa => this.resourceMapper.updateTimeline(pa[0], pa[1]))
+      .filter(p => p !== undefined)
+      .subscribe(p => this.tlDispatcher.next(new UpdateTimelineAction(p)));
 
     return agents;
   }

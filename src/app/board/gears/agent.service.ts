@@ -45,7 +45,7 @@ export class AgentService {
   }
 
   registerTransformColl(mapObs: Observable<Map<string, TransformResult>>): void {
-    mapObs.withLatestFrom(this.agents).subscribe(this.notifyAgents);
+    mapObs.withLatestFrom(this.agents).subscribe(this.notifyAgents, v => console.error('error:', v));
   }
 
   private notifyAgents(context: [Map<string, TransformResult>, Agent[]]) {

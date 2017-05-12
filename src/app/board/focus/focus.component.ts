@@ -35,7 +35,9 @@ export class FocusComponent implements OnInit {
   }
 
   get tasksDescription(): Observable<string[]> {
-    return Observable.combineLatest(this.delivery.agents, this.tasks, (a: Agent[], t: Task[]) => {return { agents: a, tasks: t }; })
+    return this.tasks
+      .withLatestFrom(this.delivery.agents)
+      .map(ta => ({ agents: ta[1], tasks: ta[0] }))
       .map(value => {
         return value.tasks.map(t => {
           return value.agents.find(a => a.service.name === t.query.taskIdentity.agentName).getInfo(t.query.taskIdentity.id);

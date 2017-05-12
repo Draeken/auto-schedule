@@ -12,8 +12,8 @@ import { PlanningComponent }  from './planning/planning.component';
         path: '',
         component: BoardComponent,
         children: [
-          { path: '', component: FocusComponent },
-          { path: 'planning', component: PlanningComponent },
+          { path: 'focus', component: FocusComponent },
+          { path: '', component: PlanningComponent },
         ]
       }
     ])

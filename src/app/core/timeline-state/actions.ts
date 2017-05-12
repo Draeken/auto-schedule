@@ -1,4 +1,4 @@
-import { TaskStatus, Task }   from '../../board/gears/task.interface';
+import { TaskStatus, Task } from '../../board/gears/task.interface';
 
 export class UpdateTaskStatusAction {
   constructor(public task: Task, public newStatus: TaskStatus) {}
