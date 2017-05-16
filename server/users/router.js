@@ -21,7 +21,7 @@ module.exports = (options) => {
 
   /**
    * body: { token: token, agentNames: { added: [string], removed: [string] } }
-   *
+   * response: tokens: [{ agent: { name: string, url: string }, token: token }]
    */
   router.post('/update-agents', require('./update-agents.controller')());
   router.get('/list-agents', require('./list-agents.controller')());

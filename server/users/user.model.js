@@ -28,6 +28,7 @@ userSchema.statics.findByDeviceToken = function(token) {
 }
 
 userSchema.statics.findByAgentToken = function(token) {
+  if (typeof token !== 'string') { throw new Error(`Invalid type for token (should be string)`, token); }
   let payload = jwt.verify(token, require('./secret').token.agents);
   return checkUserAndDevice.call(this, payload.userId, payload.deviceId)
     .then(userInfo => {

@@ -10,6 +10,7 @@ var agentSchema = new mongoose.Schema({
 });
 
 agentSchema.statics.findByToken = function(token) {
+  if (typeof token !== "string") { throw new Error(`Invalid type for token.`); }
   let payload = jwt.verify(token, require('./secret').token.server);
   return this.findById(payload.agentId).exec().then(agent => {
     if (!agent) { throw new Error(`Agent ${payload.agentId} not found.`); }

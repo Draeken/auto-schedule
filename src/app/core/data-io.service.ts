@@ -1,4 +1,4 @@
-
+import { Headers, RequestOptions, Response } from '@angular/http';
 import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -6,18 +6,32 @@ import { AgentQuery } from '../board/gears/agent-query.interface';
 import { Task,
          TaskHelper } from '../board/gears/task.interface';
 import { timelineState } from './timeline-state/state-dispatcher.provider';
+import { appState } from './app-state/state-dispatcher.provider';
 import { TimelineState } from '../core/timeline-state/timeline-state.interface';
+import { AppState } from '../core/app-state/app-state.interface';
+import { LocalUserInfo } from '../shared/local-user-info.interface';
+import { WindowRef } from '../core/window.provider';
+import { AgentInfo } from '../board/agents/agent-info.interface';
 
 @Injectable()
 export class DataIOService {
   private loki: loki;
+  private readonly userLocalKey = 'user';
+  private readonly agentsLocalKey = 'agents';
 
-  constructor(@Inject(timelineState) private tlState: Observable<TimelineState>) {
+  constructor(@Inject(timelineState) private tlState: Observable<TimelineState>,
+              @Inject(appState) private appState: Observable<AppState>,
+              private windowRef: WindowRef) {
     this.tlState
       .pluck('timeline')
       .map(TaskHelper.extractCurrent)
       .distinctUntilChanged(TaskHelper.distinct)
       .subscribe(this.saveCurrentTasks);
+
+    this.appState
+      .map(state => state.agents)
+      .distinctUntilChanged()
+      .subscribe(this.saveCurrentAgents.bind(this));
 
     this.loki = new loki('resources.db', {
       verbose: true,
@@ -26,6 +40,25 @@ export class DataIOService {
       serializationMethod: 'pretty',
       throttledSaves: false,
     });
+  }
+
+  extractBody(res: Response): any {
+    let body;
+    try {
+      body = res.json();
+    } catch (e) {
+      body = undefined;
+    }
+    return body;
+  }
+
+  getJsonHeader(): RequestOptions {
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    return new RequestOptions({ headers: headers });
+  }
+
+  getServerAPIAddress(): string {
+    return `${this.windowRef.nativeWindow.location.protocol}//${this.windowRef.nativeWindow.location.hostname}:3000/`;
   }
 
   getCurrentTasks(): Observable<AgentQuery[]> {
@@ -71,6 +104,23 @@ export class DataIOService {
 
   deserializeLoki(serialized: string): void {
     this.loki.loadJSON(serialized);
+  }
+
+  getUserInfo(): LocalUserInfo {
+    return this.retrieveFromLocalStorage(this.userLocalKey);
+  }
+
+  getAgentToken(name: string): string {
+    const agents: AgentInfo[] = this.retrieveFromLocalStorage(this.agentsLocalKey);
+    return agents.find(agent => agent.name === name).token;
+  }
+
+  setUserInfo(userInfo: LocalUserInfo): void {
+    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+  }
+
+  private saveCurrentAgents(agents: AgentInfo[]): void {
+    this.saveToLocalStorage(this.agentsLocalKey, agents);
   }
 
   private saveCurrentTasks(tasks: Task[]): void {

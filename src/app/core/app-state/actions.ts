@@ -2,8 +2,8 @@ import { AgentInfo } from '../../board/agents/agent-info.interface';
 
 import { LoginStatus } from './user-states.interface';
 
-export class ActivateAgentsAction {
-  constructor(public services: AgentInfo[]) {}
+export class UpdateAgentsAction {
+  constructor(public enabled: AgentInfo[], public disabled: string[]) {}
 }
 
 export class UpdateLoginStatusAction {
@@ -11,5 +11,5 @@ export class UpdateLoginStatusAction {
 }
 
 export type AppAction =
-  ActivateAgentsAction
+  UpdateAgentsAction
   | UpdateLoginStatusAction;

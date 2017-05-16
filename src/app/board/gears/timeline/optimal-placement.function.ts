@@ -248,7 +248,7 @@ class Neighborhood {
     return direction.map(d => {
       let sVal = placement.start + timeShift * d;
       let eVal = placement.end + timeShift * d;
-      if ((sVal < currentHole.start && currentHoleI > 0) || (eVal > currentHole.end && currentHoleI < timelineHoles.length)) {
+      if ((sVal < currentHole.start && currentHoleI > 0) || (eVal > currentHole.end && currentHoleI + 1 < timelineHoles.length)) {
         const newDestBound = d < 0 ? timelineHoles[currentHoleI - 1].end : timelineHoles[currentHoleI + 1].start;
         const placementLength = placement.end - placement.start;
         sVal = d < 0 ? newDestBound - placementLength : newDestBound;
@@ -323,7 +323,7 @@ class Neighborhood {
     const position = placement.getPosition(kind);
 
     return direction.map(d => {
-      const bound = bounds.reduce((b1, b2) => b1.start <= position + d &&  d + position <= b1.end ? b1 : b2);
+      const bound = bounds.find(b1 => b1.start <= position + d &&  d + position <= b1.end);
       const newPos = position + ((bound.end - bound.start) / division) * d;
       const value = this.clampTarget(newPos, bound.start, bound.end);
       return this.simulateMove(placement, [kind], [value]);

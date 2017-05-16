@@ -12,6 +12,11 @@ import { Task,
          TaskStatus } from '../gears/task.interface';
 import { RequestToAgent } from '../gears/resource-mapper.service';
 
+export interface TaskWithDesc {
+  task: Task;
+  description: string;
+}
+
 export abstract class Agent {
   protected requests: Subject<AgentQuery[]>;
   protected feedbackObs: BehaviorSubject<AgentQuery[]> = new BehaviorSubject([]);
@@ -19,7 +24,7 @@ export abstract class Agent {
   constructor(private _agent: AgentInfo) {
   }
 
-  abstract getInfo(taskId: number): string
+  abstract getInfo(task: Task): Observable<TaskWithDesc>
 
   abstract askForRequest(): void
 

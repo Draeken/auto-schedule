@@ -5,4 +5,5 @@ export interface AgentInfo {
   url: string;
   agentPermission: Permissions;
   userPermission: Permissions;
+  token: string;
 }

@@ -11,18 +11,24 @@ import { LocalUserInfo } from '../shared/local-user-info.interface';
 import { appDispatcher, appState } from '../core/app-state/state-dispatcher.provider';
 import { DataIOService } from '../core/data-io.service';
 
+interface LoginPayload {
+  token: string;
+  userInfo: {
+    email: string;
+    password: string;
+  };
+}
 
 @Injectable()
 export class LoginService {
-
-  private readonly userLocalKey = 'user';
   private clientToken: string;
-  private readonly serverUrl = 'http://localhost:3000/';
+  private readonly serverUrl;
 
   constructor(private http: Http,
               @Inject(appDispatcher) private dispatcher: Observer<AppAction>,
               @Inject(appState) private state: Observable<AppState>,
               private dataIo: DataIOService) {
+    this.serverUrl = this.dataIo.getServerAPIAddress();
     this.state
       .pluck('userStates')
       .filter((us: UserStates) => us.loggedStatus === LoginStatus.notLogged)
@@ -32,39 +38,30 @@ export class LoginService {
 
   private partialLogin(): void {
     this.http.post(this.serverUrl + 'user/partial-login', '')
-             .map(this.extractToken)
+             .map(res => this.dataIo.extractBody.call(this.dataIo, res))
              .subscribe(this.handlePartialLogin.bind(this));
   }
 
   attemptLogin(email: string, password: string): void {
-    const userLocalInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
-    const anoToken = userLocalInfo ? userLocalInfo.token : undefined;
-    const dataLogin = {
+    const anoToken = this.dataIo.getUserInfo().token;
+    const dataLogin: LoginPayload = {
       token: anoToken,
       userInfo: {
         email: email,
         password: password,
       }
     };
-    const headers = new Headers({ 'content-type': 'application/json' });
-    const options = new RequestOptions({ headers: headers });
 
-    this.http.post(this.serverUrl + 'user/login', dataLogin, options)
-             .map(this.extractToken)
+    this.http.post(this.serverUrl + 'user/login', dataLogin, this.dataIo.getJsonHeader())
+             .map(res => this.dataIo.extractBody.call(this.dataIo, res))
              .subscribe(this.handleFullLogin.bind(this, email));
   }
 
-  private extractToken(res: Response): string {
-    let body;
-    try {
-      body = res.json();
-    } catch (e) {
-      body = undefined;
-    }
-    return body ? body.token : undefined;
-  }
 
-  private handlePartialLogin(token: string): void {
+
+  private handlePartialLogin(body: any): void {
+    if (!body) { console.error(`No server response.`); return; }
+    const token = body.token;
     if (!token) {
       console.error('No token');
       return;
@@ -72,15 +69,17 @@ export class LoginService {
     const userInfo: LocalUserInfo = {
       token: token
     };
-    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dataIo.setUserInfo(userInfo);
     this.dispatcher.next(new UpdateLoginStatusAction(LoginStatus.partialLogged));
   }
 
-  private handleFullLogin(email: string, token: string): void {
-    let userInfo;
+  private handleFullLogin(email: string, body: any): void {
+    let userInfo: LocalUserInfo;
+    if (!body) { console.error(`No server response.`); return; }
+    const token = body.token;
     if (!token) {
       console.error('No new token');
-      userInfo = JSON.parse(localStorage.getItem(this.userLocalKey));
+      userInfo = this.dataIo.getUserInfo();
       userInfo.email = email;
     } else {
       userInfo = {
@@ -88,7 +87,7 @@ export class LoginService {
         email: email
       };
     }
-    localStorage.setItem(this.userLocalKey, JSON.stringify(userInfo));
+    this.dataIo.setUserInfo(userInfo);
     this.dispatcher.next(new UpdateLoginStatusAction(LoginStatus.fullyLogged));
   }
 

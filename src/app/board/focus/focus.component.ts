@@ -10,7 +10,7 @@ import { Task,
          TaskHelper} from '../gears/task.interface';
 import { ConductorService } from '../gears/conductor.service';
 import { AgentService } from '../gears/agent.service';
-import { Agent } from '../agents/agent.abstract';
+import { Agent, TaskWithDesc } from '../agents/agent.abstract';
 
 @Component({
   selector: 'as-focus',
@@ -34,15 +34,15 @@ export class FocusComponent implements OnInit {
   ngOnInit() {
   }
 
-  get tasksDescription(): Observable<string[]> {
-    return this.tasks
+  get tasksDescription(): Observable<TaskWithDesc[]> {
+    return Observable.combineLatest(this.tasks
       .withLatestFrom(this.delivery.agents)
       .map(ta => ({ agents: ta[1], tasks: ta[0] }))
       .map(value => {
         return value.tasks.map(t => {
-          return value.agents.find(a => a.service.name === t.query.taskIdentity.agentName).getInfo(t.query.taskIdentity.id);
+          return value.agents.find(a => a.service.name === t.query.taskIdentity.agentName).getInfo(t);
         });
-      });
+      }).switch());
   }
 
   private computeTimelefts(): Observable<number[]> {

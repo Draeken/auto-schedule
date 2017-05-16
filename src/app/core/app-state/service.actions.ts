@@ -1,12 +1,12 @@
 import { Observable } from 'rxjs/Observable';
 
 import { AgentInfo } from '../../board/agents/agent-info.interface';
-import { AppAction, ActivateAgentsAction } from './actions';
+import { AppAction, UpdateAgentsAction } from './actions';
 
 export function agentHandler(initState: AgentInfo[], actions: Observable<AppAction>): Observable<AgentInfo[]> {
   return <Observable<AgentInfo[]>>actions.scan((state: AgentInfo[], action: AppAction) => {
-    if (action instanceof ActivateAgentsAction) {
-      return activateAgents(state, action);
+    if (action instanceof UpdateAgentsAction) {
+      return updateAgents(state, action);
     } else {
       return state;
     }
@@ -14,6 +14,8 @@ export function agentHandler(initState: AgentInfo[], actions: Observable<AppActi
 }
 
 
-function activateAgents(state: AgentInfo[], action: ActivateAgentsAction): AgentInfo[] {
-  return [...state, ...action.services];
+function updateAgents(state: AgentInfo[], action: UpdateAgentsAction): AgentInfo[] {
+  const agents = state.filter(ai => action.disabled.find(d => ai.name === d) === undefined);
+  agents.push(...action.enabled);
+  return agents;
 }

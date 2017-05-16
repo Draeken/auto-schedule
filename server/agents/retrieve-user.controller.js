@@ -7,7 +7,9 @@ module.exports = (options) => {
       Agent.findByToken(req.body.agentToken),
       User.findByAgentToken(req.body.userToken),
     ]).then(values => {
-      if (values[0].agent._id !== values[1].agentId) {
+      if (!values[0]._id.equals(values[1].agentId)) {
+        console.log(values[0]._id);
+        console.log(values[1].agentId);
         throw new Error(`Agent tokens mismatch.`);
       }
       return values[1];

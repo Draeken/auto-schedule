@@ -4,6 +4,7 @@ import { DataIOService } from './data-io.service';
 import { throwIfAlreadyLoaded } from './module-import-guard';
 import { appStateAndDispatcherProvider } from './app-state/state-dispatcher.provider';
 import { timelineStateAndDispatcherProvider } from './timeline-state/state-dispatcher.provider';
+import { WindowRef } from './window.provider';
 
 @NgModule({
   imports: [
@@ -15,8 +16,8 @@ import { timelineStateAndDispatcherProvider } from './timeline-state/state-dispa
   providers: [
     DataIOService,
     ...appStateAndDispatcherProvider,
-    ...timelineStateAndDispatcherProvider
-
+    ...timelineStateAndDispatcherProvider,
+    WindowRef
   ]
 })
 export class CoreModule {

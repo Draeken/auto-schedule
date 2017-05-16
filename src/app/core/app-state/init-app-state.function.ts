@@ -21,14 +21,9 @@ function getInitialUserState(): UserStates {
 }
 
 function getInitialServices(): AgentInfo[] {
-  return [
-    {
-      name: 'Custom Task',
-      url: 'http://localhost:3001/api',
-      agentPermission: null,
-      userPermission: null
-    },
-  ];
+  let agents: AgentInfo[] = JSON.parse(localStorage.getItem('agents'));
+  if (!agents) { agents = []; }
+  return agents;
 }
 
 const initAppStateValue: AppState = {
