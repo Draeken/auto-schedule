@@ -1,9 +1,9 @@
-import { NgModule }     from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
-import { BoardComponent }     from './board.component';
-import { FocusComponent }     from './focus/focus.component';
-import { PlanningComponent }  from './planning/planning.component';
+import { BoardComponent } from './board.component';
+import { FocusComponent } from './focus/focus.component';
+import { PlanningComponent } from './planning/planning.component';
 
 @NgModule({
   imports: [

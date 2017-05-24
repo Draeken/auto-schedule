@@ -22,6 +22,5 @@ function wrapIntoBehavior(initState, obs) {
   const res = new BehaviorSubject(initState);
   obs.subscribe(s => res.next(s));
   res.subscribe(v => console.info('BS', v), v => console.error('error:', v));
-  /* Le problème vient du res.next(s) : quelque chose observe est fuck le système */
   return res;
 }

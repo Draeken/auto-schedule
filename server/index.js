@@ -21,9 +21,7 @@ module.exports = (options) => {
   app.use('/admin', require('./admin/router.js')());
 
   app.use(express.static(path.join(__dirname, '../dist')));
-  app.get('/', (req, res) => res.sendFile('index.html', { root: 'dist' }));
-
-  app.use((req, res) => res.sendStatus(404));
+  app.all('/*', (req, res) => res.sendFile('index.html', { root: 'dist' }));
 
   app.use((err, req, res, next) => {
     if (res.headersSent) {
