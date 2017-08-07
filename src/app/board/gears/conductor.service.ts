@@ -2,6 +2,19 @@ import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/combineLatest';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/operator/merge';
+import 'rxjs/add/operator/switch';
+import 'rxjs/add/operator/do';
+import 'rxjs/add/observable/timer';
+import 'rxjs/add/observable/zip';
+import 'rxjs/add/observable/combineLatest';
+import 'rxjs/add/observable/merge';
+
+
 import { Timeline } from './timeline/timeline.class';
 import { DataIOService } from '../../core/data-io.service';
 import { AgentService } from './agent.service';
@@ -42,12 +55,12 @@ export class ConductorService {
   private handleTimelineChange(timeline: Observable<Task[]>) {
     timeline
       .switchMap(this.setTimerForNextTasks)
-      .subscribe(this.handleStartedTask, v => console.error('error:', v));
+      .subscribe(this.handleStartedTask.bind(this), v => console.error('error:', v));
     timeline
       .map(TaskHelper.extractCurrent)
       .distinctUntilChanged(TaskHelper.distinct)
       .switchMap(this.setTimerForCurrentTasks)
-      .subscribe(this.handleTimedTask, v => console.error('error:', v));
+      .subscribe(this.handleTimedTask.bind(this), v => console.error('error:', v));
   }
 
   private createTimelineContext(timelineContext: TimelineContext): TimelineContext {

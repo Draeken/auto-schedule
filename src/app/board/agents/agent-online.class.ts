@@ -6,7 +6,7 @@ import { Timeline } from '../gears/timeline/timeline.class';
 import { Placement } from '../gears/timeline/placement.class';
 import { Task } from '../gears/task.interface';
 import { AgentInfo } from './agent-info.interface';
-import { AgentQuery, objToAgentQuery } from '../gears/agent-query.interface';
+import { AgentQuery, AQueryHelper } from '../gears/agent-query.interface';
 import { RequestToAgent } from '../gears/resource-mapper.service';
 import { DataIOService } from '../../core/data-io.service';
 
@@ -55,15 +55,15 @@ export class AgentOnline extends Agent {
   }
 
   private handleNewRequest(body: any): void {
-    const request = objToAgentQuery(body.request, this.service.name);
-    if (!request) {
-      console.warn('Request failed.', this.service, body.request);
+    const requests = [];
+    if (Array.isArray(body.queries)) {
+      requests.push(...body.queries.map(query => AQueryHelper.objToAgentQuery(query, this.service.name)));
+    }
+    if (requests.findIndex(r => r === undefined) !== -1) {
+      console.warn('Request failed.', this.service, body.queries);
       return;
     }
-    if (Array.isArray(request)) {
-      this.requests.next(request);
-    } else {
-      this.requests.next([request]);
-    }
+    this.requests.next(requests);
+
   }
 }

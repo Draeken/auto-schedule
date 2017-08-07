@@ -1,6 +1,10 @@
 import { Headers, RequestOptions, Response } from '@angular/http';
 import { Injectable, Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/pluck';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/distinctUntilChanged';
 
 import { AgentQuery } from '../board/gears/agent-query.interface';
 import { Task,

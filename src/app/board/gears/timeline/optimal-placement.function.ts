@@ -243,7 +243,7 @@ class Neighborhood {
   private buildTwoKindMove(placement: Placement, direction: number[]): MoveInfo[][] {
     const timelineHoles = this.getTimelineHolesFromPlacement(placement);
     const currentHoleI = timelineHoles.findIndex(hole => placement.start >= hole.start && placement.end <= hole.end);
-    const currentHole = timelineHoles[currentHoleI];
+    const currentHole = timelineHoles[currentHoleI] ? timelineHoles[currentHoleI] : this.computeMoveBound(placement);
     const timeShift = (currentHole.end - currentHole.start) / 10;
     return direction.map(d => {
       let sVal = placement.start + timeShift * d;
@@ -275,11 +275,10 @@ class Neighborhood {
     for (; i < allPlacements.length; ++i) {
       if (allPlacements[i].end > range.start) { break; }
     }
-    let startBound = range.start;
-    if (allPlacements[i].end >= range.end) {
+    if (i === allPlacements.length || allPlacements[i].end >= range.end) {
       return [];
     }
-    startBound = allPlacements[i].end;
+    let startBound = range.start;
     for (; i < allPlacements.length; ++i) {
       if (allPlacements[i].start >= range.end) { break; }
       const currentP = allPlacements[i];
@@ -323,7 +322,7 @@ class Neighborhood {
     const position = placement.getPosition(kind);
 
     return direction.map(d => {
-      const bound = bounds.find(b1 => b1.start <= position + d &&  d + position <= b1.end);
+      const bound = bounds.find(b1 => b1.start <= position && position <= b1.end);
       const newPos = position + ((bound.end - bound.start) / division) * d;
       const value = this.clampTarget(newPos, bound.start, bound.end);
       return this.simulateMove(placement, [kind], [value]);
@@ -346,20 +345,20 @@ class Neighborhood {
     }));
     this.allPlacements.forEach(p => {
       const args = this.checkColision(p, pClone, placement);
-      if (args) { moveInfos[0].additionalMove.push(this.simulateMove.apply(this, args)); }
+      if (args) { moveInfos[0].additionalMove.push(...this.simulateMove.apply(this, args)); }
     });
     return moveInfos;
   }
 
-  private checkColision(pTest: Placement, pCloned: Placement, pOri: Placement): [Placement, MoveKind, number] {
+  private checkColision(pTest: Placement, pCloned: Placement, pOri: Placement): [Placement, [MoveKind], [number]] {
     if (pTest === pOri || pTest.query.dontColide || belongsToGroup(pTest.query, pOri.query)) { return; }
     const isInside = pTest.start >= pCloned.start && pTest.end <= pCloned.end;
     if ((pTest.start <= pCloned.start && pTest.end > pCloned.start) || (isInside && pTest.end <= pOri.start)) {
       const value = -1 * (pTest.end - pCloned.start);
-      return [pTest, MoveKind.End, value];
+      return [pTest, [MoveKind.End], [value]];
     } else if ((pTest.start < pCloned.end && pTest.end >= pCloned.end) || (isInside && pTest.start >= pOri.end)) {
       const value = pCloned.end - pTest.start;
-      return [pTest, MoveKind.Start, value];
+      return [pTest, [MoveKind.Start], [value]];
     }
   }
 

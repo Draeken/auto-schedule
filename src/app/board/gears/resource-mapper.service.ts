@@ -14,7 +14,6 @@ import { UpdateObject,
          TaskTransformUpdate,
          TaskTransformInsert,
          TaskIdentity,
-         taskIdentityToString,
          RelativePos,
          AgentQuery } from './agent-query.interface';
 import { Agent } from '../agents/agent.abstract';
@@ -31,7 +30,7 @@ interface Resource {
 export interface RequestToAgent {
   need: TaskTransformNeed;
   targetTime: number;
-  taskId: number;
+  taskId: string;
   serviceName: string;
   context: loki.Doc[];
 }

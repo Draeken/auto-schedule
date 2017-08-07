@@ -1,7 +1,9 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import { Marker, MarkerKind } from './timeline.class';
-import { AgentQuery, TimeBoundary } from '../agent-query.interface';
+import { AgentQuery,
+         AQueryHelper,
+         TimeBoundary } from '../agent-query.interface';
 
 interface Point {
   x: number;
@@ -127,7 +129,7 @@ export class Placement {
   private computeLengthSatisfaction(): number {
     const duration = this.query.atomic.duration;
     const length = this._end - this._start;
-    if (!duration) { return this._start <= this._end ? 1 : 0; }
+    if (AQueryHelper.isTimeBoundaryEmpty(duration)) { return this._start <= this._end ? 1 : 0; }
     if (duration.target === undefined) {
       return length >= duration.min && length <= duration.max ? 1 : 0;
     }
@@ -164,11 +166,11 @@ export class Placement {
       this._end = sMarker.time.target;
     }
     if (this._start === undefined) {
-      this._start = this.query.atomic.duration && this._end ?
+      this._start = AQueryHelper.isTimeBoundaryEmpty(this.query.atomic.duration) && this._end ?
         this._end - this.getBestDuration(this.query.atomic.duration) : this.randomFromMarker(sMarker);
     }
     if (this._end === undefined) {
-      this._end = this.query.atomic.duration ?
+      this._end = AQueryHelper.isTimeBoundaryEmpty(this.query.atomic.duration) ?
         this._start + this.getBestDuration(this.query.atomic.duration) : this.randomFromMarker(eMarker);
     }
     if (this._start > this._end) {

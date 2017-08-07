@@ -1,6 +1,7 @@
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
+import 'rxjs/add/operator/debounceTime';
 
 import { Task, TaskStatus } from '../task.interface';
 import { AgentQuery,
@@ -11,7 +12,7 @@ import { AgentQuery,
          ProvideQuery,
          Group,
          RelativePos,
-         areSameTask } from '../agent-query.interface';
+         AQueryHelper } from '../agent-query.interface';
 import { ResourceMapperService } from '../resource-mapper.service';
 import { Placement } from './placement.class';
 import { OptimalPlacement, Bound } from './optimal-placement.function';
@@ -391,7 +392,7 @@ export class Timeline {
     if (!toOne || !toOne.length) { return Observable.of([]); }
     return this.timeline.map(t => {
       const markers = toOne.map(link => {
-        const target = t.find(areSameTask.bind(this, link.taskIdentity));
+        const target = t.find(AQueryHelper.areSameTask.bind(this, link.taskIdentity));
         if (!target) { return allowNotFoundTarget ? [] : this.markerOfBanning(); }
         return this.getMarkersFromRelative(link.kind, link.timeElapsed, { start: target.start, end: target.end }, 'linkToOne');
       }).reduce((acc, v) => acc.concat(v), []);

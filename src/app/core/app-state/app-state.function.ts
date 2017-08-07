@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/zip';
 
 import { agentHandler } from './service.actions';
 import { userHandler } from './user.actions';

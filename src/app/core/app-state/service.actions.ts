@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/scan';
 
 import { AgentInfo } from '../../board/agents/agent-info.interface';
 import { AppAction, UpdateAgentsAction } from './actions';

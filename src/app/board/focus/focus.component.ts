@@ -1,6 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
+import 'rxjs/add/observable/interval';
 
 import { timelineDispatcher,
          timelineState } from '../../core/timeline-state/state-dispatcher.provider';

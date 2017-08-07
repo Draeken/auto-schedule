@@ -63,13 +63,13 @@ export interface LinkTask {
 
 export interface TaskIdentity {
   agentName: string;
-  id: number;
+  id: string;
 }
 
 export interface Group {
   name: string;
   constraints: LinkTask[];
-  members: number[];
+  members: string[];
 }
 
 
@@ -88,20 +88,12 @@ export interface AgentQuery {
   group?: Group;
 };
 
-export function taskIdentityToString(t: TaskIdentity): string {
-  return t.agentName + '#' + t.id;
-}
-
-export function areSameTask(t1: TaskIdentity, t2: TaskIdentity): boolean {
-  return t1.agentName === t2.agentName && t1.id === t2.id;
-}
-
 function extractTaskIdentity(t: TaskIdentity, agentName?: string): TaskIdentity {
   if (!t) { throw 'invalid'; }
   if (agentName) {
     t.agentName = agentName;
   }
-  if (typeof t.agentName !== 'string' || typeof t.id !== 'number') {
+  if (typeof t.agentName !== 'string' || typeof t.id !== 'string') {
     throw 'invalid';
   }
   return t;
@@ -177,35 +169,45 @@ function extractGroup(g: Group): Group {
   return g;
 }
 
-export function objToAgentQuery(o: AgentQuery, agentName: string): AgentQuery {
-  try {
-    const atomic = o.atomic;
-    if (!atomic) { return undefined; }
-    const taskIdentity = extractTaskIdentity(o.taskIdentity, agentName);
-    const transform = extractTransform(o.transform);
-    const autoTerminate = o.autoterminate !== undefined ? o.autoterminate : true;
-    const notifyWhenDone = o.notifyWhenDone !== undefined ? o.notifyWhenDone : false;
-    const dontColide = o.dontColide !== undefined ? o.dontColide : false;
-    const relativePos = extractRelativPos(o.relativePos);
-    const provideQuery = extractProviderQuery(o.provide);
-    const linkedToOne = o.linkedToOne ? extractArray(o.linkedToOne, (l: LinkTask) => extractLinkTask !== undefined) : undefined;
-    const linkedToAll = o.linkedToAll ? extractArray(o.linkedToAll, (l: LinkTask) => extractLinkTask !== undefined) : undefined;
-    const belongsTo = extractPrimitive(o.belongsTo, 'string');
-    const group = extractGroup(o.group);
+export class AQueryHelper {
+  static areSameTask(t1: TaskIdentity, t2: TaskIdentity): boolean {
+    return t1.agentName === t2.agentName && t1.id === t2.id;
+  }
 
-    return {
-      taskIdentity: taskIdentity,
-      transform: transform,
-      atomic: atomic,
-      autoterminate: autoTerminate,
-      belongsTo: belongsTo,
-      dontColide: dontColide,
-      group: group,
-      linkedToAll: linkedToAll,
-      linkedToOne: linkedToOne,
-      notifyWhenDone: notifyWhenDone,
-      provide: provideQuery,
-      relativePos: relativePos
-    };
-  } catch (e) { return undefined; }
+  static isTimeBoundaryEmpty(tb: TimeBoundary): boolean {
+    return tb.max != null || tb.min != null || tb.target != null;
+  }
+
+  static objToAgentQuery(o: AgentQuery, agentName: string): AgentQuery {
+    try {
+      const atomic = o.atomic;
+      if (!atomic) { return undefined; }
+      const taskIdentity = extractTaskIdentity(o.taskIdentity, agentName);
+      const transform = extractTransform(o.transform);
+      const autoTerminate = o.autoterminate !== undefined ? o.autoterminate : true;
+      const notifyWhenDone = o.notifyWhenDone !== undefined ? o.notifyWhenDone : false;
+      const dontColide = o.dontColide !== undefined ? o.dontColide : false;
+      const relativePos = extractRelativPos(o.relativePos);
+      const provideQuery = extractProviderQuery(o.provide);
+      const linkedToOne = o.linkedToOne ? extractArray(o.linkedToOne, (l: LinkTask) => extractLinkTask !== undefined) : undefined;
+      const linkedToAll = o.linkedToAll ? extractArray(o.linkedToAll, (l: LinkTask) => extractLinkTask !== undefined) : undefined;
+      const belongsTo = extractPrimitive(o.belongsTo, 'string');
+      const group = extractGroup(o.group);
+
+      return {
+        taskIdentity: taskIdentity,
+        transform: transform,
+        atomic: atomic,
+        autoterminate: autoTerminate,
+        belongsTo: belongsTo,
+        dontColide: dontColide,
+        group: group,
+        linkedToAll: linkedToAll,
+        linkedToOne: linkedToOne,
+        notifyWhenDone: notifyWhenDone,
+        provide: provideQuery,
+        relativePos: relativePos
+      };
+    } catch (e) { return undefined; }
+  }
 }
